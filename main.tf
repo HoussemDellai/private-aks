@@ -1,5 +1,5 @@
 resource "azurerm_resource_group" "rg" {
-  name     = "${var.prefix}-rg"
+  name     = "${var.prefix}-aks-rg"
   location = var.location
 }
 
@@ -10,11 +10,11 @@ resource "azurerm_virtual_network" "vnet" {
   address_space       = ["10.0.0.0/8"] # ["10.1.0.0/16"]
 }
 
-resource "azurerm_subnet" "default" {
-  name                 = "default"
+resource "azurerm_subnet" "aks" {
+  name                 = "aks-subnet"
   virtual_network_name = azurerm_virtual_network.vnet.name
   resource_group_name  = azurerm_resource_group.rg.name
-  address_prefixes     = ["10.240.0.0/16"] # ["10.1.0.0/22"]
+  address_prefixes     = ["10.1.0.0/16"] # ["10.1.0.0/22"]
 
   enforce_private_link_endpoint_network_policies = true
   enforce_private_link_service_network_policies  = true # false
@@ -42,7 +42,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
     enable_node_public_ip = false
     max_pods              = 110
     orchestrator_version  = var.kubernetes_version
-    vnet_subnet_id        = azurerm_subnet.default.id
+    vnet_subnet_id        = azurerm_subnet.aks.id
   }
 
   network_profile {
@@ -102,9 +102,18 @@ resource "azurerm_kubernetes_cluster" "aks" {
 #   resource_group_name = azurerm_kubernetes_cluster.aks.node_resource_group
 # }
 
+#################################################################
+# ACR
+#################################################################
+
+resource "azurerm_resource_group" "acr" {
+  name     = "${var.prefix}-acr-rg"
+  location = var.location
+}
+
 resource "azurerm_container_registry" "acr" {
   name                = var.acr_name
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = azurerm_resource_group.acr.name
   location            = azurerm_resource_group.rg.location
   sku                 = "Standard"
   admin_enabled       = false
@@ -123,7 +132,7 @@ resource "azurerm_role_assignment" "role_acrpull" {
 #################################################################
 
 resource "azurerm_resource_group" "bastion" {
-  name     = "bastion-rg"
+  name     = "${var.prefix}-bastion-rg"
   location = "West Europe"
 }
 
@@ -131,7 +140,7 @@ resource "azurerm_subnet" "bastion" {
   name                 = "AzureBastionSubnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.0.0/27"]
+  address_prefixes     = ["10.2.0.0/27"]
 }
 
 resource "azurerm_public_ip" "bastion" {
@@ -159,7 +168,7 @@ resource "azurerm_bastion_host" "bastion" {
 #################################################################
 
 resource "azurerm_resource_group" "vm" {
-  name     = "vm-rg"
+  name     = "${var.prefix}-vm-rg"
   location = "West Europe"
 }
 
@@ -167,7 +176,7 @@ resource "azurerm_subnet" "vm" {
   name                 = "vm-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.1.0/29"]
+  address_prefixes     = ["10.3.0.0/29"]
 }
 
 resource "azurerm_network_interface" "vm" {
@@ -221,7 +230,7 @@ resource "azurerm_resource_group" "kv" {
 resource "azurerm_key_vault" "keyvault" {
   name                        = var.keyvault_name
   location                    = azurerm_resource_group.rg.location
-  resource_group_name         = azurerm_resource_group.rg.name
+  resource_group_name         = azurerm_resource_group.kv.name
   enabled_for_disk_encryption = false
   tenant_id                   = data.azurerm_client_config.current.tenant_id
   soft_delete_enabled         = true
@@ -252,7 +261,7 @@ resource "azurerm_key_vault" "keyvault" {
   network_acls {
     default_action = "Deny"              # "Allow"
     bypass         = "AzureServices"     # "None"
-    ip_rules       = ["37.164.29.81/32"] # IP Addresses, or CIDR Blocks which should be able to access the Key Vault.
+    ip_rules       = ["80.215.229.224/32"] # IP Addresses, or CIDR Blocks which should be able to access the Key Vault.
     // virtual_network_subnet_ids = [] # Subnet ID's which should be able to access this Key Vault
   }
 }
@@ -330,7 +339,7 @@ resource "azurerm_subnet" "keyvault" {
   name                 = "keyvault-subnet"
   virtual_network_name = azurerm_virtual_network.vnet.name
   resource_group_name  = azurerm_resource_group.rg.name
-  address_prefixes     = ["10.1.0.0/29"]
+  address_prefixes     = ["10.4.0.0/29"]
 
   enforce_private_link_endpoint_network_policies = true
   enforce_private_link_service_network_policies  = false
@@ -338,25 +347,25 @@ resource "azurerm_subnet" "keyvault" {
 
 resource "azurerm_private_dns_zone" "dnsprivatezone" {
   name                = "privatelink.vaultcore.azure.net" # "privatelink.azurewebsites.net"
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = azurerm_resource_group.kv.name
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "dnszonelink" {
-  name = "dnszonelink"
-  resource_group_name = azurerm_resource_group.rg.name
+  name                  = "dnszonelink"
+  resource_group_name   = azurerm_resource_group.kv.name
   private_dns_zone_name = azurerm_private_dns_zone.dnsprivatezone.name
-  virtual_network_id = azurerm_virtual_network.vnet.id
+  virtual_network_id    = azurerm_virtual_network.vnet.id
 }
 
 resource "azurerm_private_endpoint" "kv_pe" {
   name                = "keyvault-private-endpoint"
   location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-  subnet_id           = azurerm_subnet.default.id
+  resource_group_name = azurerm_resource_group.kv.name
+  subnet_id           = azurerm_subnet.aks.id
   # subnet_id           = azurerm_subnet.keyvault.id
 
   private_dns_zone_group {
-    name = "privatednszonegroup"
+    name                 = "privatednszonegroup"
     private_dns_zone_ids = [azurerm_private_dns_zone.dnsprivatezone.id]
   }
 
@@ -367,3 +376,32 @@ resource "azurerm_private_endpoint" "kv_pe" {
     subresource_names              = ["vault"]
   }
 }
+
+###################################################################
+# Install tools in Bastion VM
+###################################################################
+// resource "azurerm_virtual_machine_extension" "extension" {
+//   name                 = "k8s-tools"
+//   virtual_machine_id   = azurerm_windows_virtual_machine.vm.id
+//   publisher            = "Microsoft.Azure.Extensions"
+//   type                 = "CustomScript"
+//   type_handler_version = "2.0"
+
+//   settings = <<SETTINGS
+//     {
+//         "commandToExecute": "hostname"
+//     }
+// SETTINGS
+// }
+
+# # Install Azure CLI
+# Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'; rm .\AzureCLI.msi
+#
+# # Install chocolately
+# Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+#
+# # Install Kubernetes CLI
+# choco install kubernetes-cli
+#
+# # Install Helm CLI
+# choco install kubernetes-helm

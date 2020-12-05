@@ -2,9 +2,10 @@ echo "Setting up the variables..."
 $subscriptionId = (az account show | ConvertFrom-Json).id
 $tenantId = (az account show | ConvertFrom-Json).tenantId
 $location = "westeurope"
-$resourceGroupName = "demo03-rg"
-$aksName = "demo03-aks"
-$keyVaultName = "privatekv03"
+$aksRg = "demo05-aks-rg"
+$kvRg = "demo05-kv-rg"
+$aksName = "demo05-aks"
+$keyVaultName = "privatekv05"
 $secret1Name = "DatabaseLogin"
 $secret2Name = "DatabasePassword"
 $secret1Alias = "DATABASE_LOGIN"
@@ -13,11 +14,11 @@ $identityName = "identity-aks-kv"
 $identitySelector = "azure-kv"
 $secretProviderClassName = "secret-provider-kv"
 
-$aks = az aks show -n $aksName -g $resourceGroupName | ConvertFrom-Json
+$aks = az aks show -n $aksName -g $aksRg | ConvertFrom-Json
 
 echo "Creating Key Vault..."
-$keyVault = az keyvault create -n $keyVaultName -g $resourceGroupName -l $location --enable-soft-delete true --retention-days 7 | ConvertFrom-Json
-# $keyVault = az keyvault show -n $keyVaultName -g $resourceGroupName  | ConvertFrom-Json
+# $keyVault = az keyvault create -n $keyVaultName -g $kvRg -l $location --enable-soft-delete true --retention-days 7 | ConvertFrom-Json
+$keyVault = az keyvault show -n $keyVaultName -g $kvRg  | ConvertFrom-Json
 
 echo "Creating Secrets in Key Vault..."
 az keyvault secret set --name $secret1Name --value "Houssem" --vault-name $keyVaultName
@@ -57,11 +58,9 @@ spec:
           objectAlias: $secret2Alias
           objectType: secret
           objectVersion: ""
-    resourceGroup: $resourceGroupName
-    subscriptionId: $subscriptionId
     tenantId: $tenantId
 "@
-$secretProviderKV | kubectl create -f -
+$secretProviderKV | kubectl apply -f -
 
 az role assignment create --role "Managed Identity Operator" --assignee $aks.identityProfile.kubeletidentity.clientId --scope /subscriptions/$subscriptionId/resourcegroups/$($aks.nodeResourceGroup)
 az role assignment create --role "Virtual Machine Contributor" --assignee $aks.identityProfile.kubeletidentity.clientId --scope /subscriptions/$subscriptionId/resourcegroups/$($aks.nodeResourceGroup)
