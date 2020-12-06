@@ -16,13 +16,8 @@ $secretProviderClassName = "secret-provider-kv"
 
 $aks = az aks show -n $aksName -g $aksRg | ConvertFrom-Json
 
-echo "Creating Key Vault..."
-# $keyVault = az keyvault create -n $keyVaultName -g $kvRg -l $location --enable-soft-delete true --retention-days 7 | ConvertFrom-Json
+echo "Getting Key Vault..."
 $keyVault = az keyvault show -n $keyVaultName -g $kvRg  | ConvertFrom-Json
-
-echo "Creating Secrets in Key Vault..."
-az keyvault secret set --name $secret1Name --value "Houssem" --vault-name $keyVaultName
-az keyvault secret set --name $secret2Name --value "P@ssword123456" --vault-name $keyVaultName
 
 echo "Installing Secrets Store CSI Driver using Helm..."
 kubectl create ns csi-driver
@@ -62,9 +57,6 @@ spec:
 "@
 $secretProviderKV | kubectl apply -f -
 
-az role assignment create --role "Managed Identity Operator" --assignee $aks.identityProfile.kubeletidentity.clientId --scope /subscriptions/$subscriptionId/resourcegroups/$($aks.nodeResourceGroup)
-az role assignment create --role "Virtual Machine Contributor" --assignee $aks.identityProfile.kubeletidentity.clientId --scope /subscriptions/$subscriptionId/resourcegroups/$($aks.nodeResourceGroup)
-
 echo "Installing AAD Pod Identity into AKS..."
 helm repo add aad-pod-identity https://raw.githubusercontent.com/Azure/aad-pod-identity/master/charts
 helm install pod-identity aad-pod-identity/aad-pod-identity
@@ -74,12 +66,6 @@ kubectl get pods
 echo "Retrieving the existing Azure Identity..."
 $existingIdentity = az resource list -g $aks.nodeResourceGroup --query "[?contains(type, 'Microsoft.ManagedIdentity/userAssignedIdentities')]"  | ConvertFrom-Json
 $identity = az identity show -n $existingIdentity.name -g $existingIdentity.resourceGroup | ConvertFrom-Json
-
-echo "Assigning Reader Role to new Identity for Key Vault..."
-az role assignment create --role "Reader" --assignee $identity.principalId --scope $keyVault.id
-
-echo "Setting policy to access secrets in Key Vault..."
-az keyvault set-policy -n $keyVaultName --secret-permissions get --spn $identity.clientId
 
 echo "Adding AzureIdentity and AzureIdentityBinding..."
 $aadPodIdentityAndBinding = @"
@@ -102,7 +88,7 @@ spec:
 "@
 $aadPodIdentityAndBinding | kubectl apply -f -
 
-echo "Deploying a Nginx Pod for testing..."
+echo "Deploying an Nginx Pod for testing..."
 $nginxPod = @"
 kind: Pod
 apiVersion: v1
