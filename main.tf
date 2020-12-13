@@ -97,11 +97,6 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 }
 
-# data "azurerm_user_assigned_identity" "identity" {
-#   name                = "${azurerm_kubernetes_cluster.aks.name}-agentpool"
-#   resource_group_name = azurerm_kubernetes_cluster.aks.node_resource_group
-# }
-
 #################################################################
 # ACR
 #################################################################
@@ -133,7 +128,7 @@ resource "azurerm_role_assignment" "role_acrpull" {
 
 resource "azurerm_resource_group" "bastion" {
   name     = "${var.prefix}-bastion-rg"
-  location = "West Europe"
+  location = "westeurope"
 }
 
 resource "azurerm_subnet" "bastion" {
@@ -169,7 +164,7 @@ resource "azurerm_bastion_host" "bastion" {
 
 resource "azurerm_resource_group" "vm" {
   name     = "${var.prefix}-vm-rg"
-  location = "West Europe"
+  location = var.location
 }
 
 resource "azurerm_subnet" "vm" {
@@ -216,7 +211,53 @@ resource "azurerm_windows_virtual_machine" "vm" {
 }
 
 #################################################################################
-#   Key Vault
+# Storage Account
+#################################################################################
+
+resource "azurerm_resource_group" "storage" {
+  name     = "${var.prefix}-storage-rg"
+  location = var.location
+}
+
+resource "azurerm_storage_account" "sa" {
+  name                     = var.storage_name
+  resource_group_name      = azurerm_resource_group.storage.name
+  location                 = var.location
+  account_tier             = "Standard" # "Premium"
+  account_kind             = "StorageV2" # "BlobStorage" "BlockBlobStorage" "FileStorage" "Storage"
+  account_replication_type = "LRS"
+  enable_https_traffic_only = true
+  access_tier               = "Hot" # "Cool"
+  allow_blob_public_access  = false
+  # min_tls_version           = "TLS1_2"
+
+  network_rules {
+    default_action = "Deny" # "Allow"
+    ip_rules       = ["80.215.194.10/32"]
+    bypass = ["None"] # Logging, Metrics, AzureServices
+    # virtual_network_subnet_ids 
+  }
+
+  blob_properties {
+    # cors_rule {}
+    delete_retention_policy {
+      days = 1 # between 1 and 365 days. Defaults to 7
+    }
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+
+resource "azurerm_storage_container" "container" {
+  name                  = "data"
+  storage_account_name  = azurerm_storage_account.sa.name
+  container_access_type = "private" # "blob" "container"
+}
+
+#################################################################################
+# Key Vault
 #################################################################################
 
 data "azurerm_client_config" "current" {
@@ -261,8 +302,8 @@ resource "azurerm_key_vault" "keyvault" {
   network_acls {
     default_action = "Deny"              # "Allow"
     bypass         = "AzureServices"     # "None"
-    ip_rules       = ["80.215.229.224/32"] # IP Addresses, or CIDR Blocks which should be able to access the Key Vault.
-    // virtual_network_subnet_ids = [] # Subnet ID's which should be able to access this Key Vault
+    ip_rules       = ["80.215.194.10/32"] # IP Addresses, or CIDR Blocks which should be able to access the Key Vault.
+    # virtual_network_subnet_ids = [] # Subnet ID's which should be able to access this Key Vault
   }
 }
 
@@ -405,57 +446,3 @@ resource "azurerm_private_endpoint" "kv_pe" {
 #
 # # Install Helm CLI
 # choco install kubernetes-helm
-
-
-
-provider "helm" {
-  version = ">= 1.3.2"
-  kubernetes {
-    host     = azurerm_kubernetes_cluster.aks.kube_config.0.host
-
-    # client_key             = "${base64decode(azurerm_kubernetes_cluster.cluster.kube_config.0.client_key)}"
-    # client_certificate     = "${base64decode(azurerm_kubernetes_cluster.cluster.kube_config.0.client_certificate)}"
-    # cluster_ca_certificate = "${base64decode(azurerm_kubernetes_cluster.cluster.kube_config.0.cluster_ca_certificate)}"
-  }
-}
-
-provider "kubernetes" {
-  version = ">= 1.13.3"
-}
-
-#################################################################################
-#   HELM
-#################################################################################
-
-resource "kubernetes_namespace" "csi_driver_namespace" {
-  metadata {
-    name = "csi-driver"
-  }
-}
-
-resource "helm_release" "csi_azure_release" {
-  name       = "csi-keyvault"
-  repository = "https://raw.githubusercontent.com/Azure/secrets-store-csi-driver-provider-azure/master/charts"
-  chart      = "csi-secrets-store-provider-azure"
-  # version    = "0.0.6"
-  namespace  = kubernetes_namespace.csi_driver_namespace.metadata[0].name
-
-  # values = [
-  #   "${file("values.yaml")}"
-  # ] 
-
-  depends_on = [
-    azurerm_kubernetes_cluster.aks,
-  ]
-}
-
-resource "helm_release" "pod_identity_release" {
-  name       = "pod-identity"
-  repository = "https://raw.githubusercontent.com/Azure/aad-pod-identity/master/charts"
-  chart      = "aad-pod-identity"
-  namespace  = "default"
-
-  depends_on = [
-    azurerm_kubernetes_cluster.aks,
-  ]
-}

@@ -17,6 +17,9 @@ cat tfplan.json | jq '[.resource_changes[] | {type: .type, name: .change.after.n
 # apply the infra changes
 terraform apply tfplan
 
+# list TF resources
+terraform state list
+
 # delete the infra
 terraform destroy
 
