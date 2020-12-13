@@ -229,6 +229,9 @@ resource "azurerm_subnet" "storage" {
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.5.0.0/29"]
+
+  enforce_private_link_endpoint_network_policies = true
+  enforce_private_link_service_network_policies  = false
 }
 
 resource "azurerm_storage_account" "storage" {
@@ -246,7 +249,7 @@ resource "azurerm_storage_account" "storage" {
   network_rules {
     default_action = "Deny" # "Allow"
     ip_rules       = var.allowed_ips
-    bypass         = ["Logging", "Metrics"] # None, Metrics, AzureServices
+    bypass         = ["Logging", "Metrics", "AzureServices"] # None
     # virtual_network_subnet_ids 
   }
 
@@ -269,7 +272,7 @@ resource "azurerm_storage_container" "container" {
 }
 
 resource "azurerm_private_dns_zone" "storage" {
-  name                = "storage-dns" # "privatelink.azurewebsites.net"
+  name                = "privatelink.blob.core.windows.net" # "privatelink.azurewebsites.net"
   resource_group_name = azurerm_resource_group.storage.name
 }
 

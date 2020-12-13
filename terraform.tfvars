@@ -7,4 +7,4 @@ keyvault_name      = "private0kv0051"
 db_admin_login     = "houssem"
 db_admin_password  = "SuperPassword123!"
 storage_name       = "demo0051storacc"
-allowed_ips        = ["141.101.69.229"] # ["141.101.69.109/32"]
+allowed_ips        = ["80.214.24.207"] # ["141.101.69.109/32"]
