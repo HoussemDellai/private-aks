@@ -41,3 +41,8 @@ variable "storage_name" {
   type        = string
   description = "The name of the Storage Account."
 }
+
+variable "allowed_ips" {
+  type    = list(string)
+  default = ["141.101.69.109/32"]
+}

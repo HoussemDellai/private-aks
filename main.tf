@@ -5,10 +5,14 @@ resource "azurerm_resource_group" "rg" {
 
 resource "azurerm_virtual_network" "vnet" {
   name                = "${var.prefix}-vnet"
-  location            = azurerm_resource_group.rg.location
+  location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
   address_space       = ["10.0.0.0/8"] # ["10.1.0.0/16"]
 }
+
+#################################################################
+# AKS
+#################################################################
 
 resource "azurerm_subnet" "aks" {
   name                 = "aks-subnet"
@@ -20,9 +24,10 @@ resource "azurerm_subnet" "aks" {
   enforce_private_link_service_network_policies  = true # false
 }
 
+
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = "${var.prefix}-aks"
-  location            = azurerm_resource_group.rg.location
+  location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
   # node_resource_group     = "${var.prefix}-aks-resources"
   dns_prefix              = "${var.prefix}-dns"
@@ -109,7 +114,7 @@ resource "azurerm_resource_group" "acr" {
 resource "azurerm_container_registry" "acr" {
   name                = var.acr_name
   resource_group_name = azurerm_resource_group.acr.name
-  location            = azurerm_resource_group.rg.location
+  location            = var.location
   sku                 = "Standard"
   admin_enabled       = false
 }
@@ -219,13 +224,20 @@ resource "azurerm_resource_group" "storage" {
   location = var.location
 }
 
-resource "azurerm_storage_account" "sa" {
-  name                     = var.storage_name
-  resource_group_name      = azurerm_resource_group.storage.name
-  location                 = var.location
-  account_tier             = "Standard" # "Premium"
-  account_kind             = "StorageV2" # "BlobStorage" "BlockBlobStorage" "FileStorage" "Storage"
-  account_replication_type = "LRS"
+resource "azurerm_subnet" "storage" {
+  name                 = "storage-subnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.5.0.0/29"]
+}
+
+resource "azurerm_storage_account" "storage" {
+  name                      = var.storage_name
+  resource_group_name       = azurerm_resource_group.storage.name
+  location                  = var.location
+  account_tier              = "Standard"  # "Premium"
+  account_kind              = "StorageV2" # "BlobStorage" "BlockBlobStorage" "FileStorage" "Storage"
+  account_replication_type  = "LRS"
   enable_https_traffic_only = true
   access_tier               = "Hot" # "Cool"
   allow_blob_public_access  = false
@@ -233,8 +245,8 @@ resource "azurerm_storage_account" "sa" {
 
   network_rules {
     default_action = "Deny" # "Allow"
-    ip_rules       = ["80.215.194.10/32"]
-    bypass = ["None"] # Logging, Metrics, AzureServices
+    ip_rules       = var.allowed_ips
+    bypass         = ["Logging", "Metrics"] # None, Metrics, AzureServices
     # virtual_network_subnet_ids 
   }
 
@@ -252,8 +264,40 @@ resource "azurerm_storage_account" "sa" {
 
 resource "azurerm_storage_container" "container" {
   name                  = "data"
-  storage_account_name  = azurerm_storage_account.sa.name
+  storage_account_name  = azurerm_storage_account.storage.name
   container_access_type = "private" # "blob" "container"
+}
+
+resource "azurerm_private_dns_zone" "storage" {
+  name                = "storage-dns" # "privatelink.azurewebsites.net"
+  resource_group_name = azurerm_resource_group.storage.name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "storage-dns-vnet-link" {
+  name                  = "storagednsvnetlink"
+  resource_group_name   = azurerm_resource_group.storage.name
+  private_dns_zone_name = azurerm_private_dns_zone.storage.name
+  virtual_network_id    = azurerm_virtual_network.vnet.id
+}
+
+resource "azurerm_private_endpoint" "storage" {
+  name                = "storage-private-endpoint"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.storage.name
+  subnet_id           = azurerm_subnet.storage.id
+  # subnet_id           = azurerm_subnet.keyvault.id
+
+  private_dns_zone_group {
+    name                 = "storprdnszonegroup"
+    private_dns_zone_ids = [azurerm_private_dns_zone.storage.id]
+  }
+
+  private_service_connection {
+    name                           = "storage-private-service-connection"
+    private_connection_resource_id = azurerm_storage_account.storage.id
+    is_manual_connection           = false
+    subresource_names              = ["blob"]
+  }
 }
 
 #################################################################################
@@ -263,15 +307,25 @@ resource "azurerm_storage_container" "container" {
 data "azurerm_client_config" "current" {
 }
 
-resource "azurerm_resource_group" "kv" {
-  name     = "${var.prefix}-kv-rg"
+resource "azurerm_resource_group" "keyvault" {
+  name     = "${var.prefix}-keyvault-rg"
   location = var.location
+}
+
+resource "azurerm_subnet" "keyvault" {
+  name                 = "keyvault-subnet"
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  resource_group_name  = azurerm_resource_group.rg.name
+  address_prefixes     = ["10.4.0.0/29"]
+
+  enforce_private_link_endpoint_network_policies = true
+  enforce_private_link_service_network_policies  = false
 }
 
 resource "azurerm_key_vault" "keyvault" {
   name                        = var.keyvault_name
-  location                    = azurerm_resource_group.rg.location
-  resource_group_name         = azurerm_resource_group.kv.name
+  location                    = var.location
+  resource_group_name         = azurerm_resource_group.keyvault.name
   enabled_for_disk_encryption = false
   tenant_id                   = data.azurerm_client_config.current.tenant_id
   soft_delete_enabled         = true
@@ -300,9 +354,9 @@ resource "azurerm_key_vault" "keyvault" {
   }
 
   network_acls {
-    default_action = "Deny"              # "Allow"
-    bypass         = "AzureServices"     # "None"
-    ip_rules       = ["80.215.194.10/32"] # IP Addresses, or CIDR Blocks which should be able to access the Key Vault.
+    default_action = "Deny"          # "Allow"
+    bypass         = "AzureServices" # "None"
+    ip_rules       = var.allowed_ips # IP Addresses, or CIDR Blocks which should be able to access the Key Vault.
     # virtual_network_subnet_ids = [] # Subnet ID's which should be able to access this Key Vault
   }
 }
@@ -319,11 +373,6 @@ resource "azurerm_key_vault_secret" "secret-password" {
   key_vault_id = azurerm_key_vault.keyvault.id
 }
 
-# az role assignment create 
-#    --role "Reader" 
-#    --assignee $identity.principalId 
-#    --scope $keyVault.id
-
 resource "azurerm_role_assignment" "role_keyvault_reader" {
   # name                             = "keyvaultreader"
   role_definition_name = "Reader"
@@ -333,11 +382,6 @@ resource "azurerm_role_assignment" "role_keyvault_reader" {
   skip_service_principal_aad_check = true
 }
 
-# az role assignment create 
-#    --role "Managed Identity Operator" 
-#    --assignee $aks.identityProfile.kubeletidentity.clientId 
-#    --scope /subscriptions/$subscriptionId/resourcegroups/$($aks.nodeResourceGroup)
-
 resource "azurerm_role_assignment" "role_rg_operator" {
   role_definition_name = "Managed Identity Operator"
   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id
@@ -346,11 +390,6 @@ resource "azurerm_role_assignment" "role_rg_operator" {
   skip_service_principal_aad_check = true
 }
 
-# az role assignment create 
-#    --role "Virtual Machine Contributor" 
-#    --assignee $aks.identityProfile.kubeletidentity.clientId 
-#    --scope /subscriptions/$subscriptionId/resourcegroups/$($aks.nodeResourceGroup)
-
 resource "azurerm_role_assignment" "role_vm_contributor" {
   role_definition_name = "Virtual Machine Contributor"
   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id
@@ -358,8 +397,6 @@ resource "azurerm_role_assignment" "role_vm_contributor" {
   scope                            = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourcegroups/${azurerm_kubernetes_cluster.aks.node_resource_group}"
   skip_service_principal_aad_check = true
 }
-
-# az keyvault set-policy -n $keyVaultName --secret-permissions get --spn $identity.clientId
 
 resource "azurerm_key_vault_access_policy" "keyvault_policy" {
   key_vault_id = azurerm_key_vault.keyvault.id
@@ -376,38 +413,28 @@ resource "azurerm_key_vault_access_policy" "keyvault_policy" {
   ]
 }
 
-resource "azurerm_subnet" "keyvault" {
-  name                 = "keyvault-subnet"
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  resource_group_name  = azurerm_resource_group.rg.name
-  address_prefixes     = ["10.4.0.0/29"]
-
-  enforce_private_link_endpoint_network_policies = true
-  enforce_private_link_service_network_policies  = false
-}
-
-resource "azurerm_private_dns_zone" "dnsprivatezone" {
+resource "azurerm_private_dns_zone" "keyvault" {
   name                = "privatelink.vaultcore.azure.net" # "privatelink.azurewebsites.net"
-  resource_group_name = azurerm_resource_group.kv.name
+  resource_group_name = azurerm_resource_group.keyvault.name
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "dnszonelink" {
   name                  = "dnszonelink"
-  resource_group_name   = azurerm_resource_group.kv.name
-  private_dns_zone_name = azurerm_private_dns_zone.dnsprivatezone.name
+  resource_group_name   = azurerm_resource_group.keyvault.name
+  private_dns_zone_name = azurerm_private_dns_zone.keyvault.name
   virtual_network_id    = azurerm_virtual_network.vnet.id
 }
 
-resource "azurerm_private_endpoint" "kv_pe" {
+resource "azurerm_private_endpoint" "keyvault" {
   name                = "keyvault-private-endpoint"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.kv.name
+  location            = var.location
+  resource_group_name = azurerm_resource_group.keyvault.name
   subnet_id           = azurerm_subnet.aks.id
   # subnet_id           = azurerm_subnet.keyvault.id
 
   private_dns_zone_group {
     name                 = "privatednszonegroup"
-    private_dns_zone_ids = [azurerm_private_dns_zone.dnsprivatezone.id]
+    private_dns_zone_ids = [azurerm_private_dns_zone.keyvault.id]
   }
 
   private_service_connection {
