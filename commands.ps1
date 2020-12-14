@@ -123,3 +123,25 @@ kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/DATABASE_LOGIN
 kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/$secret1Alias
 kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/DATABASE_PASSWORD
 kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/$secret2Alias
+
+#############################################################
+
+echo "Deploying an Nginx Pod for testing..."
+$nginxPod = @"
+kind: Pod
+apiVersion: v1
+metadata:
+  name: azure-cli
+  labels:
+    aadpodidbinding: $($identitySelector)
+spec:
+  containers:
+    - name: azure-cli
+      image: mcr.microsoft.com/azure-cli
+      args: [/bin/sh, -c, 'i=0; while true; do sleep 10; done']
+"@ | kubectl apply -f -
+
+echo "Validating the pod has access to the secrets from Key Vault..."
+kubectl exec -it azure-cli -- /bin/sh 
+az login --identity
+az keyvault secret show --vault-name private0kv0051 --name DatabasePassword

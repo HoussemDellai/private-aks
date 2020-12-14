@@ -376,6 +376,7 @@ resource "azurerm_key_vault_secret" "secret-password" {
   key_vault_id = azurerm_key_vault.keyvault.id
 }
 
+# TODO: Craete another Identity for Key Vault
 resource "azurerm_role_assignment" "role_keyvault_reader" {
   # name                             = "keyvaultreader"
   role_definition_name = "Reader"
@@ -446,6 +447,39 @@ resource "azurerm_private_endpoint" "keyvault" {
     is_manual_connection           = false
     subresource_names              = ["vault"]
   }
+}
+
+###################################################################
+# Azure Identities
+###################################################################
+
+resource "azurerm_user_assigned_identity" "storage" {
+  name                = var.identity_storage_name
+  resource_group_name = azurerm_kubernetes_cluster.aks.node_resource_group 
+  // resource_group_name = azurerm_resource_group.rg.name
+  location            = var.location
+}
+// az role assignment create \
+//     --role "Managed Identity Operator" \
+//     --assignee $CLUSTER_MSI_CLIENT_ID \
+//     --scope $IDENTITY_RESOURCE_ID
+resource "azurerm_role_assignment" "storage-mio" {
+  scope                            = azurerm_user_assigned_identity.storage.id
+  role_definition_name             = "Managed Identity Operator"
+  principal_id                     = azurerm_user_assigned_identity.storage.principal_id
+  skip_service_principal_aad_check = true
+}
+// az role assignment create \
+//     --role "Storage Blob Data Contributor" \
+//     --assignee $IDENTITY_CLIENT_ID \
+//     --scope "$STORAGE_ACCOUNT_RESOURCE_ID/blobServices/default/containers/$CONTAINER"
+// if you want the managed identity to access your entire Storage Account, 
+// you can ignore /blobServices/default/containers/$CONTAINER
+resource "azurerm_role_assignment" "storage-sbdc" {
+  scope                            = azurerm_user_assigned_identity.storage.id
+  role_definition_name             = "Storage Blob Data Contributor"
+  principal_id                     = azurerm_user_assigned_identity.storage.principal_id
+  skip_service_principal_aad_check = true
 }
 
 ###################################################################
