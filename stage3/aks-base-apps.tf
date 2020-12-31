@@ -1,7 +1,13 @@
+data "azurerm_kubernetes_cluster" "aks" {
+  name                = "demo0051-aks"
+  resource_group_name = "demo0051-aks-rg"
+}
+
 provider "helm" {
   version = ">= 1.3.2"
   kubernetes {
-    host     = azurerm_kubernetes_cluster.aks.kube_config.0.host
+    host     = data.azurerm_kubernetes_cluster.aks.kube_config.0.host
+    # host     = azurerm_kubernetes_cluster.aks.kube_config.0.host
 
     # client_key             = "${base64decode(azurerm_kubernetes_cluster.cluster.kube_config.0.client_key)}"
     # client_certificate     = "${base64decode(azurerm_kubernetes_cluster.cluster.kube_config.0.client_certificate)}"
@@ -13,9 +19,9 @@ provider "kubernetes" {
   version = ">= 1.13.3"
 }
 
-#################################################################################
+#--------------------------------------------------------------------------------
 # HELM
-#################################################################################
+#--------------------------------------------------------------------------------
 
 resource "kubernetes_namespace" "csi_driver_namespace" {
   metadata {
@@ -34,9 +40,9 @@ resource "helm_release" "csi_azure_release" {
   #   "${file("values.yaml")}"
   # ] 
 
-  depends_on = [
-    azurerm_kubernetes_cluster.aks,
-  ]
+  // depends_on = [
+  //   azurerm_kubernetes_cluster.aks,
+  // ]
 }
 
 resource "helm_release" "pod_identity_release" {
@@ -45,7 +51,7 @@ resource "helm_release" "pod_identity_release" {
   chart      = "aad-pod-identity"
   namespace  = "default"
 
-  depends_on = [
-    azurerm_kubernetes_cluster.aks,
-  ]
+  // depends_on = [
+  //   azurerm_kubernetes_cluster.aks,
+  // ]
 }
