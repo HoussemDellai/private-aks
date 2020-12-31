@@ -10,9 +10,9 @@ resource "azurerm_virtual_network" "vnet" {
   address_space       = ["10.0.0.0/8"] # ["10.1.0.0/16"]
 }
 
-#################################################################
+#--------------------------------------------------------------------------------
 # AKS
-#################################################################
+#--------------------------------------------------------------------------------
 
 resource "azurerm_subnet" "aks" {
   name                 = "aks-subnet"
@@ -102,9 +102,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 }
 
-#################################################################
+#--------------------------------------------------------------------------------
 # ACR
-#################################################################
+#--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "acr" {
   name     = "${var.prefix}-acr-rg"
@@ -127,9 +127,9 @@ resource "azurerm_role_assignment" "role_acrpull" {
   skip_service_principal_aad_check = true
 }
 
-#################################################################
+#--------------------------------------------------------------------------------
 # BASTION
-#################################################################
+#--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "bastion" {
   name     = "${var.prefix}-bastion-rg"
@@ -163,9 +163,9 @@ resource "azurerm_bastion_host" "bastion" {
   }
 }
 
-#################################################################
+#--------------------------------------------------------------------------------
 # VM for BASTION
-#################################################################
+#--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "vm" {
   name     = "${var.prefix}-vm-rg"
@@ -215,9 +215,9 @@ resource "azurerm_windows_virtual_machine" "vm" {
   }
 }
 
-#################################################################################
+#--------------------------------------------------------------------------------
 # Storage Account
-#################################################################################
+#--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "storage" {
   name     = "${var.prefix}-storage-rg"
@@ -248,7 +248,8 @@ resource "azurerm_storage_account" "storage" {
 
   network_rules {
     default_action = "Deny" # "Allow"
-    ip_rules       = var.allowed_ips
+    ip_rules       = [data.http.machine_ip.body] 
+    # ip_rules       = var.allowed_ips
     bypass         = ["Logging", "Metrics", "AzureServices"] # None
     # virtual_network_subnet_ids 
   }
@@ -303,9 +304,9 @@ resource "azurerm_private_endpoint" "storage" {
   }
 }
 
-#################################################################################
+#--------------------------------------------------------------------------------
 # Key Vault
-#################################################################################
+#--------------------------------------------------------------------------------
 
 data "azurerm_client_config" "current" {
 }
@@ -359,7 +360,8 @@ resource "azurerm_key_vault" "keyvault" {
   network_acls {
     default_action = "Deny"          # "Allow"
     bypass         = "AzureServices" # "None"
-    ip_rules       = var.allowed_ips # IP Addresses, or CIDR Blocks which should be able to access the Key Vault.
+    ip_rules       = [data.http.machine_ip.body] 
+    # ip_rules       = var.allowed_ips # IP Addresses, or CIDR Blocks which should be able to access the Key Vault.
     # virtual_network_subnet_ids = [] # Subnet ID's which should be able to access this Key Vault
   }
 }
@@ -449,9 +451,9 @@ resource "azurerm_private_endpoint" "keyvault" {
   }
 }
 
-###################################################################
+#--------------------------------------------------------------------------------##
 # Azure Identities
-###################################################################
+#--------------------------------------------------------------------------------##
 
 resource "azurerm_user_assigned_identity" "storage" {
   name                = var.identity_storage_name
@@ -482,9 +484,13 @@ resource "azurerm_role_assignment" "storage-sbdc" {
   skip_service_principal_aad_check = true
 }
 
-###################################################################
+data "http" "machine_ip" {
+  url = "http://ifconfig.me"
+}
+
+#--------------------------------------------------------------------------------##
 # Install tools in Bastion VM
-###################################################################
+#--------------------------------------------------------------------------------##
 // resource "azurerm_virtual_machine_extension" "extension" {
 //   name                 = "k8s-tools"
 //   virtual_machine_id   = azurerm_windows_virtual_machine.vm.id

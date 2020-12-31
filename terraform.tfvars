@@ -8,4 +8,4 @@ db_admin_login        = "houssem"
 db_admin_password     = "SuperPassword123!"
 storage_name          = "demo0051storacc"
 identity_storage_name = "storage-identity"
-allowed_ips           = ["80.215.45.250"] # ["141.101.69.109/32"]
+# allowed_ips           = ["80.215.45.250"] # ["141.101.69.109/32"]
