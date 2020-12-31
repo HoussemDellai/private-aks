@@ -126,8 +126,37 @@ kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/$secret2Alias
 
 #############################################################
 
+$NS_STORAGE="blob"
+kubectl create namespace $NS_STORAGE
+
+$identity_storage_name="storage-identity"
+$identity_storage = az identity show -n $identity_storage_name -g $aks.nodeResourceGroup | ConvertFrom-Json
+
+$STORAGE_POD_LABEL_SELECTOR=$($identity_storage_name)-selector
+
+@"
+apiVersion: aadpodidentity.k8s.io/v1
+kind: AzureIdentity
+metadata:
+  name: $($identity_storage_name)
+  namespace: $($NS_STORAGE)
+spec:
+  type: 0
+  resourceID: $($identity_storage.id)
+  clientID: $($identity_storage.clientId)
+---
+apiVersion: aadpodidentity.k8s.io/v1
+kind: AzureIdentityBinding
+metadata:
+  name: $($identity_storage_name)-binding
+  namespace: $($NS_STORAGE)
+spec:
+  azureIdentity: $($identity_storage_name)
+  selector: $($STORAGE_POD_LABEL_SELECTOR)
+"@ | kubectl apply -f -
+
 echo "Deploying an Nginx Pod for testing..."
-$nginxPod = @"
+@"
 kind: Pod
 apiVersion: v1
 metadata:
