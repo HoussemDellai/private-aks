@@ -248,10 +248,9 @@ resource "azurerm_storage_account" "storage" {
 
   network_rules {
     default_action = "Deny" # "Allow"
-    ip_rules       = [data.http.machine_ip.body] 
+    ip_rules       = [data.http.machine_ip.body]
     # ip_rules       = var.allowed_ips
-    bypass         = ["Logging", "Metrics", "AzureServices"] # None
-    # virtual_network_subnet_ids 
+    bypass = ["Logging", "Metrics", "AzureServices"] # None
   }
 
   blob_properties {
@@ -360,7 +359,7 @@ resource "azurerm_key_vault" "keyvault" {
   network_acls {
     default_action = "Deny"          # "Allow"
     bypass         = "AzureServices" # "None"
-    ip_rules       = [data.http.machine_ip.body] 
+    ip_rules       = [data.http.machine_ip.body]
     # ip_rules       = var.allowed_ips # IP Addresses, or CIDR Blocks which should be able to access the Key Vault.
     # virtual_network_subnet_ids = [] # Subnet ID's which should be able to access this Key Vault
   }
@@ -457,9 +456,9 @@ resource "azurerm_private_endpoint" "keyvault" {
 
 resource "azurerm_user_assigned_identity" "storage" {
   name                = var.identity_storage_name
-  resource_group_name = azurerm_kubernetes_cluster.aks.node_resource_group 
+  resource_group_name = azurerm_kubernetes_cluster.aks.node_resource_group
   // resource_group_name = azurerm_resource_group.rg.name
-  location            = var.location
+  location = var.location
 }
 // az role assignment create \
 //     --role "Managed Identity Operator" \

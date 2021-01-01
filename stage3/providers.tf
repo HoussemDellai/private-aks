@@ -1,3 +1,16 @@
+provider "helm" {
+  kubernetes {
+    host                   = data.azurerm_kubernetes_cluster.aks.kube_config.0.host
+    client_key             = base64decode(azurerm_kubernetes_cluster.aks.kube_config.0.client_key)
+    client_certificate     = base64decode(azurerm_kubernetes_cluster.aks.kube_config.0.client_certificate)
+    cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.aks.kube_config.0.cluster_ca_certificate)
+  }
+}
+
+provider "azurerm" {
+  features {}
+}
+
 terraform {
   required_providers {
     azurerm = {
@@ -5,16 +18,17 @@ terraform {
       version = "2.41.0"
     }
     helm = {
-      source = "hashicorp/helm"
+      source  = "hashicorp/helm"
       version = "2.0.1"
     }
     kubernetes = {
-      source = "hashicorp/kubernetes"
+      source  = "hashicorp/kubernetes"
       version = "1.13.3"
     }
   }
 }
 
-provider "azurerm" {
-  features {}
+data "azurerm_kubernetes_cluster" "aks" {
+  name                = "demo0051-aks"
+  resource_group_name = "demo0051-aks-rg"
 }

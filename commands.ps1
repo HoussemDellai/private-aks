@@ -19,13 +19,13 @@ $aks = az aks show -n $aksName -g $aksRg | ConvertFrom-Json
 echo "Getting Key Vault..."
 $keyVault = az keyvault show -n $keyVaultName -g $kvRg  | ConvertFrom-Json
 
-echo "Installing Secrets Store CSI Driver using Helm..."
-kubectl create ns csi-driver
-echo "Installing Secrets Store CSI Driver with Azure Key Vault Provider..."
-helm repo add csi-secrets-store-provider-azure https://raw.githubusercontent.com/Azure/secrets-store-csi-driver-provider-azure/master/charts
-helm install csi-azure csi-secrets-store-provider-azure/csi-secrets-store-provider-azure --namespace csi-driver
-sleep 2
-kubectl get pods -n csi-driver
+# echo "Installing Secrets Store CSI Driver using Helm..."
+# kubectl create ns csi-driver
+# echo "Installing Secrets Store CSI Driver with Azure Key Vault Provider..."
+# helm repo add csi-secrets-store-provider-azure https://raw.githubusercontent.com/Azure/secrets-store-csi-driver-provider-azure/master/charts
+# helm install csi-azure csi-secrets-store-provider-azure/csi-secrets-store-provider-azure --namespace csi-driver
+# sleep 2
+# kubectl get pods -n csi-driver
 
 echo "Using the Azure Key Vault Provider..."
 $secretProviderKV = @"
@@ -57,14 +57,15 @@ spec:
 "@
 $secretProviderKV | kubectl apply -f -
 
-echo "Installing AAD Pod Identity into AKS..."
-helm repo add aad-pod-identity https://raw.githubusercontent.com/Azure/aad-pod-identity/master/charts
-helm install pod-identity aad-pod-identity/aad-pod-identity
-# kubectl apply -f https://raw.githubusercontent.com/Azure/aad-pod-identity/master/deploy/infra/deployment-rbac.yaml
-kubectl get pods
+# echo "Installing AAD Pod Identity into AKS..."
+# helm repo add aad-pod-identity https://raw.githubusercontent.com/Azure/aad-pod-identity/master/charts
+# helm install pod-identity aad-pod-identity/aad-pod-identity
+# # kubectl apply -f https://raw.githubusercontent.com/Azure/aad-pod-identity/master/deploy/infra/deployment-rbac.yaml
+# kubectl get pods
 
 echo "Retrieving the existing Azure Identity..."
-$existingIdentity = az resource list -g $aks.nodeResourceGroup --query "[?contains(type, 'Microsoft.ManagedIdentity/userAssignedIdentities')]"  | ConvertFrom-Json
+$existingIdentity = az identity list --query "[?contains(name, '-agentpool')]" | ConvertFrom-Json
+# $existingIdentity = az resource list -g $aks.nodeResourceGroup --query "[?contains(type, 'Microsoft.ManagedIdentity/userAssignedIdentities')]"  | ConvertFrom-Json
 $identity = az identity show -n $existingIdentity.name -g $existingIdentity.resourceGroup | ConvertFrom-Json
 
 echo "Adding AzureIdentity and AzureIdentityBinding..."
@@ -124,15 +125,16 @@ kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/$secret1Alias
 kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/DATABASE_PASSWORD
 kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/$secret2Alias
 
-#############################################################
+#----------------------------------------------------------------------------------------
 
+$storage_name = "demo0051storacc"
 $NS_STORAGE="blob"
 kubectl create namespace $NS_STORAGE
 
 $identity_storage_name="storage-identity"
 $identity_storage = az identity show -n $identity_storage_name -g $aks.nodeResourceGroup | ConvertFrom-Json
 
-$STORAGE_POD_LABEL_SELECTOR=$($identity_storage_name)-selector
+$STORAGE_POD_LABEL_SELECTOR="$($identity_storage_name)-selector"
 
 @"
 apiVersion: aadpodidentity.k8s.io/v1
@@ -155,6 +157,29 @@ spec:
   selector: $($STORAGE_POD_LABEL_SELECTOR)
 "@ | kubectl apply -f -
 
+# testing for Storage Account
+echo "Deploying an Nginx Pod for testing..."
+@"
+kind: Pod
+apiVersion: v1
+metadata:
+  name: storage-az-cli
+  namespace: $($NS_STORAGE)
+  labels:
+    aadpodidbinding: $($STORAGE_POD_LABEL_SELECTOR)
+spec:
+  containers:
+    - name: azure-cli
+      image: mcr.microsoft.com/azure-cli
+      args: [/bin/sh, -c, 'i=0; while true; do sleep 10; done']
+"@ | kubectl apply -f -
+
+echo "Validating the pod has access to the Storage Account..."
+kubectl exec -it storage-az-cli -n $NS_STORAGE -- /bin/sh 
+az login --identity
+az storage blob list -o table -c data --account-name $storage_name --account-key 'ncnKtGDdIQmCSLkbfXYNGnwaXuGDOoGCKYmrmXLQY/R5lauPABgWKql9xXcwP6OuKAr83+DwBd+4NOUaTjaMqA=='
+
+# testing for Key Vault with Pod Identity, without CSI Driver
 echo "Deploying an Nginx Pod for testing..."
 @"
 kind: Pod
