@@ -1,0 +1,9 @@
+# Default values for pod_identity.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+identityName: "id4storage"
+namespace: "storage"
+podLabelSelector: "id4storage-selector"
+identityId: ""
+identityClientId: ""
