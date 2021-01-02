@@ -128,8 +128,8 @@ kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/$secret2Alias
 #----------------------------------------------------------------------------------------
 
 $storage_name = "demo0051storacc"
-$NS_STORAGE="blob"
-kubectl create namespace $NS_STORAGE
+$namespace="blob"
+kubectl create namespace $namespace
 
 $identity_storage_name="storage-identity"
 $identity_storage = az identity show -n $identity_storage_name -g $aks.nodeResourceGroup | ConvertFrom-Json
@@ -141,7 +141,7 @@ apiVersion: aadpodidentity.k8s.io/v1
 kind: AzureIdentity
 metadata:
   name: $($identity_storage_name)
-  namespace: $($NS_STORAGE)
+  namespace: $($namespace)
 spec:
   type: 0
   resourceID: $($identity_storage.id)
@@ -151,7 +151,7 @@ apiVersion: aadpodidentity.k8s.io/v1
 kind: AzureIdentityBinding
 metadata:
   name: $($identity_storage_name)-binding
-  namespace: $($NS_STORAGE)
+  namespace: $($namespace)
 spec:
   azureIdentity: $($identity_storage_name)
   selector: $($STORAGE_POD_LABEL_SELECTOR)
@@ -164,7 +164,7 @@ kind: Pod
 apiVersion: v1
 metadata:
   name: storage-az-cli
-  namespace: $($NS_STORAGE)
+  namespace: $($namespace)
   labels:
     aadpodidbinding: $($STORAGE_POD_LABEL_SELECTOR)
 spec:
@@ -175,7 +175,7 @@ spec:
 "@ | kubectl apply -f -
 
 echo "Validating the pod has access to the Storage Account..."
-kubectl exec -it storage-az-cli -n $NS_STORAGE -- /bin/sh 
+kubectl exec -it storage-az-cli -n $namespace -- /bin/sh 
 az login --identity
 az storage blob list -o table -c data --account-name $storage_name --account-key 'ncnKtGDdIQmCSLkbfXYNGnwaXuGDOoGCKYmrmXLQY/R5lauPABgWKql9xXcwP6OuKAr83+DwBd+4NOUaTjaMqA=='
 

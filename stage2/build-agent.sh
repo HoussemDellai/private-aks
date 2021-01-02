@@ -33,7 +33,7 @@ choco install microsoft-edge -y
 choco install git -y
 
 # Start new PS window with VS Code and Git configured
-Restart-Service -Name "powershell.exe"
+# Restart-Service -Name "powershell.exe"
 # invoke-expression 'cmd /c start powershell -Command { 
 cd "C:\Users\houssem\Desktop"
 git clone https://github.com/HoussemDellai/private-aks
