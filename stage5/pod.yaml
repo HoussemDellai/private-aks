@@ -4,7 +4,7 @@ metadata:
   name: storage-az-cli
   namespace: $($namespace)
   labels:
-    aadpodidbinding: $($STORAGE_POD_LABEL_SELECTOR)
+    aadpodidbinding: $($pod_identity_selector)
 spec:
   containers:
     - name: azure-cli

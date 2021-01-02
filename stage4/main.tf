@@ -1,5 +1,5 @@
-resource "helm_release" "pod_identity" {
-  name = "pod-identity-release"
+resource "helm_release" "pod_identity_binding" {
+  name = "pod-identity-binding"
   chart = "./pod_identity_chart"
   namespace  = "storage"
   create_namespace = true
@@ -31,8 +31,16 @@ resource "helm_release" "pod_identity" {
 }
 
 data "azurerm_user_assigned_identity" "identity" {
-  name                = "storage-identity"
+  name                = local.identity_name # "storage-identity"
   resource_group_name = "MC_demo0051-aks-rg_demo0051-aks_westeurope"
+}
+
+locals {
+  aks_name       = "${var.prefix}-aks"
+  identity_name  = "${var.prefix}-identity"
+  # node_resource_group = 
+  # aks_rg         = "${var.prefix}-aks-rg"
+  # aks_name       = "${var.aks_name != "" ? var.aks_name : "${var.prefix}-aks"}"
 }
 
 # data "template_file" "yaml_template" {

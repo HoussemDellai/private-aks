@@ -17,6 +17,21 @@ variable "default_node_count" {
   description = "default node count for system node pool"
 }
 
+variable "db_admin_login" {
+  type        = string
+  description = "Database secret admin login stored in Keyvault"
+}
+
+variable "db_admin_password" {
+  type        = string
+  description = "Database secret admin password stored in Keyvault"
+}
+
+variable "aks_name" {
+  type        = string
+  description = "AKS name"
+}
+
 variable "acr_name" {
   type        = string
   description = "ACR name"
@@ -27,22 +42,13 @@ variable "keyvault_name" {
   description = "Name for the Key Vault instance"
 }
 
-variable "db_admin_login" {
-  type        = string
-  description = "Database secret admin login"
-}
-
-variable "db_admin_password" {
-  type        = string
-  description = "Database secret admin password"
-}
 
 variable "storage_name" {
   type        = string
   description = "The name of the Storage Account."
 }
 
-variable "identity_storage_name" {
+variable "identity_name" {
   type        = string
   description = "The name of the Identity Storage Account."
 }
