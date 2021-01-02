@@ -125,61 +125,8 @@ kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/$secret1Alias
 kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/DATABASE_PASSWORD
 kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/$secret2Alias
 
-#----------------------------------------------------------------------------------------
-
-$storage_name = "demo0051storacc"
-$namespace="blob"
-kubectl create namespace $namespace
-
-$identity_storage_name="storage-identity"
-$identity_storage = az identity show -n $identity_storage_name -g $aks.nodeResourceGroup | ConvertFrom-Json
-
-$STORAGE_POD_LABEL_SELECTOR="$($identity_storage_name)-selector"
-
-@"
-apiVersion: aadpodidentity.k8s.io/v1
-kind: AzureIdentity
-metadata:
-  name: $($identity_storage_name)
-  namespace: $($namespace)
-spec:
-  type: 0
-  resourceID: $($identity_storage.id)
-  clientID: $($identity_storage.clientId)
----
-apiVersion: aadpodidentity.k8s.io/v1
-kind: AzureIdentityBinding
-metadata:
-  name: $($identity_storage_name)-binding
-  namespace: $($namespace)
-spec:
-  azureIdentity: $($identity_storage_name)
-  selector: $($STORAGE_POD_LABEL_SELECTOR)
-"@ | kubectl apply -f -
-
-# testing for Storage Account
-echo "Deploying an Nginx Pod for testing..."
-@"
-kind: Pod
-apiVersion: v1
-metadata:
-  name: storage-az-cli
-  namespace: $($namespace)
-  labels:
-    aadpodidbinding: $($STORAGE_POD_LABEL_SELECTOR)
-spec:
-  containers:
-    - name: azure-cli
-      image: mcr.microsoft.com/azure-cli
-      args: [/bin/sh, -c, 'i=0; while true; do sleep 10; done']
-"@ | kubectl apply -f -
-
-echo "Validating the pod has access to the Storage Account..."
-kubectl exec -it storage-az-cli -n $namespace -- /bin/sh 
-az login --identity
-az storage blob list -o table -c data --account-name $storage_name --account-key 'ncnKtGDdIQmCSLkbfXYNGnwaXuGDOoGCKYmrmXLQY/R5lauPABgWKql9xXcwP6OuKAr83+DwBd+4NOUaTjaMqA=='
-
 # testing for Key Vault with Pod Identity, without CSI Driver
+# yet another option
 echo "Deploying an Nginx Pod for testing..."
 @"
 kind: Pod
@@ -199,3 +146,58 @@ echo "Validating the pod has access to the secrets from Key Vault..."
 kubectl exec -it azure-cli -- /bin/sh 
 az login --identity
 az keyvault secret show --vault-name private0kv0051 --name DatabasePassword
+
+#----------------------------------------------------------------------------------------
+
+$storage_account_name = "demo0051storacc"
+$identity_name="storage-identity"
+
+$namespace="storage"
+kubectl create namespace $namespace
+
+$identity = az identity show -n $identity_name -g $aks.nodeResourceGroup | ConvertFrom-Json
+
+$pod_identity_selector="$($identity_name)-selector"
+
+@"
+apiVersion: aadpodidentity.k8s.io/v1
+kind: AzureIdentity
+metadata:
+  name: $($identity_name)
+  namespace: $($namespace)
+spec:
+  type: 0
+  resourceID: $($identity.id)
+  clientID: $($identity.clientId)
+---
+apiVersion: aadpodidentity.k8s.io/v1
+kind: AzureIdentityBinding
+metadata:
+  name: $($identity_name)-binding
+  namespace: $($namespace)
+spec:
+  azureIdentity: $($identity_name)
+  selector: $($pod_identity_selector)
+"@ | kubectl apply -f -
+
+# testing for Storage Account
+echo "Deploying an Nginx Pod for testing..."
+@"
+kind: Pod
+apiVersion: v1
+metadata:
+  name: storage-az-cli
+  namespace: $($namespace)
+  labels:
+    aadpodidbinding: $($pod_identity_selector)
+spec:
+  containers:
+    - name: azure-cli
+      image: mcr.microsoft.com/azure-cli
+      args: [/bin/sh, -c, 'i=0; while true; do sleep 10; done']
+"@ | kubectl apply -f -
+
+echo "Validating the pod has access to the Storage Account..."
+kubectl exec -it storage-az-cli -n $namespace -- /bin/sh 
+az login --identity
+az storage blob list -o table -c data --account-name $storage_account_name --account-key 'ncnKtGDdIQmCSLkbfXYNGnwaXuGDOoGCKYmrmXLQY/R5lauPABgWKql9xXcwP6OuKAr83+DwBd+4NOUaTjaMqA=='

@@ -15,4 +15,4 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   azureIdentity: {{ .Values.identityName }}
-  selector: {{ .Values.podLabelSelector }}
+  selector: {{ .Values.podIdentitySelector }}

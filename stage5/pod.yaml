@@ -1,0 +1,12 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: storage-az-cli
+  namespace: $($namespace)
+  labels:
+    aadpodidbinding: $($STORAGE_POD_LABEL_SELECTOR)
+spec:
+  containers:
+    - name: azure-cli
+      image: mcr.microsoft.com/azure-cli
+      args: [/bin/sh, -c, 'i=0; while true; do sleep 10; done']

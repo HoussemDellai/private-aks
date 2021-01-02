@@ -1,12 +1,8 @@
 resource "helm_release" "pod_identity" {
   name = "pod-identity-release"
-  # repository = "https://charts.bitnami.com/bitnami"
   chart = "./pod_identity_chart"
-  # version    = "6.0.1"
-
-  //   values = [
-  //     "${file("values.yaml")}"
-  //   ]
+  namespace  = "storage"
+  create_namespace = true
 
   set {
     name  = "namespace"
@@ -15,11 +11,11 @@ resource "helm_release" "pod_identity" {
 
   set {
     name  = "identityName"
-    value = "id4storage"
+    value = "storage-identity"
   }
 
   set {
-    name  = "podLabelSelector"
+    name  = "podIdentitySelector"
     value = "id4storage-selector"
   }
 
