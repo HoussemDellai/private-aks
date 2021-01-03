@@ -1,31 +1,15 @@
 #--------------------------------------------------------------------------------
-# Local variables
-#--------------------------------------------------------------------------------
-
-locals {
-  aks_name       = "${var.prefix}-aks"
-  acr_name       = "${var.prefix}acr"
-  keyvault_name  = "${var.prefix}keyvault"
-  storage_name   = "${var.prefix}storage"
-  identity_name  = "${var.prefix}-identity"
-  vnet_name      = "${var.prefix}-vnet"
-  container_name = "${var.prefix}-conatiner"
-  aks_rg         = "${var.prefix}-aks-rg"
-  # aks_name       = "${var.aks_name != "" ? var.aks_name : "${var.prefix}-aks"}"
-}
-
-#--------------------------------------------------------------------------------
 # Global resources
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "aks" {
   name     = local.aks_rg # "${var.prefix}-aks-rg"
-  location = var.location
+  location = local.location # local.location # var.location
 }
 
 resource "azurerm_virtual_network" "vnet" {
   name                = local.vnet_name # "${var.prefix}-vnet"
-  location            = var.location
+  location            = local.location # local.location # var.location
   resource_group_name = azurerm_resource_group.aks.name
   address_space       = ["10.0.0.0/8"] # ["10.1.0.0/16"]
 }
@@ -47,13 +31,13 @@ resource "azurerm_subnet" "aks" {
 
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = local.aks_name
-  location            = var.location
+  location            = local.location # local.location # var.location
   resource_group_name = azurerm_resource_group.aks.name
-  # node_resource_group     = "${var.prefix}-aks-resources"
-  dns_prefix              = "${var.prefix}-dns"
+  dns_prefix              = local.dns_prefix
   kubernetes_version      = var.kubernetes_version
   private_cluster_enabled = true
   sku_tier                = "Free" # Paid # Uptime SLA
+  node_resource_group     = local.aks_nodes_rg
 
   default_node_pool {
     name                  = "system"
@@ -127,14 +111,14 @@ resource "azurerm_kubernetes_cluster" "aks" {
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "acr" {
-  name     = "${var.prefix}-acr-rg"
-  location = var.location
+  name     = local.acr_rg # "${var.prefix}-acr-rg"
+  location = local.location # local.location # var.location
 }
 
 resource "azurerm_container_registry" "acr" {
   name                = local.acr_name # "${var.prefix}acr" # var.acr_name
   resource_group_name = azurerm_resource_group.acr.name
-  location            = var.location
+  location            = local.location # local.location # var.location
   sku                 = "Standard"
   admin_enabled       = false
 }
@@ -152,7 +136,7 @@ resource "azurerm_role_assignment" "role_acrpull" {
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "bastion" {
-  name     = "${var.prefix}-bastion-rg"
+  name     = bastion_rg # "${var.prefix}-bastion-rg"
   location = "westeurope"
 }
 
@@ -188,8 +172,8 @@ resource "azurerm_bastion_host" "bastion" {
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "vm" {
-  name     = "${var.prefix}-vm-rg"
-  location = var.location
+  name     = local.vm_rg # "${var.prefix}-vm-rg"
+  location = local.location # local.location # var.location
 }
 
 resource "azurerm_subnet" "vm" {
@@ -240,8 +224,8 @@ resource "azurerm_windows_virtual_machine" "vm" {
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "storage" {
-  name     = "${var.prefix}-storage-rg"
-  location = var.location
+  name     = local.storage_rg # "${var.prefix}-storage-rg"
+  location = local.location # local.location # var.location
 }
 
 resource "azurerm_subnet" "storage" {
@@ -257,7 +241,7 @@ resource "azurerm_subnet" "storage" {
 resource "azurerm_storage_account" "storage" {
   name                      = local.storage_name # "${var.prefix}storage" # var.storage_name
   resource_group_name       = azurerm_resource_group.storage.name
-  location                  = var.location
+  location                  = local.location # local.location # var.location
   account_tier              = "Standard"  # "Premium"
   account_kind              = "StorageV2" # "BlobStorage" "BlockBlobStorage" "FileStorage" "Storage"
   account_replication_type  = "LRS"
@@ -313,7 +297,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "storage-dns-vnet-link"
 
 resource "azurerm_private_endpoint" "storage" {
   name                = "storage-private-endpoint"
-  location            = var.location
+  location            = local.location # var.location
   resource_group_name = azurerm_resource_group.storage.name
   subnet_id           = azurerm_subnet.storage.id
   # subnet_id           = azurerm_subnet.keyvault.id
@@ -339,8 +323,8 @@ data "azurerm_client_config" "current" {
 }
 
 resource "azurerm_resource_group" "keyvault" {
-  name     = "${var.prefix}-keyvault-rg"
-  location = var.location
+  name     = local.keyvault_rg # "${var.prefix}-keyvault-rg"
+  location = local.location # var.location
 }
 
 resource "azurerm_subnet" "keyvault" {
@@ -355,7 +339,7 @@ resource "azurerm_subnet" "keyvault" {
 
 resource "azurerm_key_vault" "keyvault" {
   name                        = local.keyvault_name # "${var.prefix}keyvault"
-  location                    = var.location
+  location                    = local.location # var.location
   resource_group_name         = azurerm_resource_group.keyvault.name
   enabled_for_disk_encryption = false
   tenant_id                   = data.azurerm_client_config.current.tenant_id
@@ -460,7 +444,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "dnszonelink" {
 
 resource "azurerm_private_endpoint" "keyvault" {
   name                = "keyvault-private-endpoint"
-  location            = var.location
+  location            = local.location # var.location
   resource_group_name = azurerm_resource_group.keyvault.name
   subnet_id           = azurerm_subnet.aks.id
   # subnet_id           = azurerm_subnet.keyvault.id
@@ -483,9 +467,9 @@ resource "azurerm_private_endpoint" "keyvault" {
 #--------------------------------------------------------------------------------##
 
 resource "azurerm_user_assigned_identity" "storage" {
-  name                = "${var.prefix}-identity" # var.identity_name
+  name                = local.identity_name # "${var.prefix}-identity" # var.identity_name
   resource_group_name = azurerm_kubernetes_cluster.aks.node_resource_group
-  location            = var.location
+  location            = local.location # var.location
 }
 // az role assignment create \
 //     --role "Managed Identity Operator" \
