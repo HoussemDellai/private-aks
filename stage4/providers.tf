@@ -25,6 +25,6 @@ terraform {
 }
 
 data "azurerm_kubernetes_cluster" "aks" {
-  name                = "demo0051-aks"
-  resource_group_name = "demo0051-aks-rg"
+  name                = "${var.prefix}-aks"
+  resource_group_name = "${var.prefix}-aks-rg"
 }
