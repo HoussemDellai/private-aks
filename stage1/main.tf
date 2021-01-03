@@ -3,13 +3,13 @@
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "aks" {
-  name     = local.aks_rg # "${var.prefix}-aks-rg"
+  name     = local.aks_rg   # "${var.prefix}-aks-rg"
   location = local.location # local.location # var.location
 }
 
 resource "azurerm_virtual_network" "vnet" {
   name                = local.vnet_name # "${var.prefix}-vnet"
-  location            = local.location # local.location # var.location
+  location            = local.location  # local.location # var.location
   resource_group_name = azurerm_resource_group.aks.name
   address_space       = ["10.0.0.0/8"] # ["10.1.0.0/16"]
 }
@@ -30,19 +30,19 @@ resource "azurerm_subnet" "aks" {
 
 
 resource "azurerm_kubernetes_cluster" "aks" {
-  name                = local.aks_name
-  location            = local.location # local.location # var.location
-  resource_group_name = azurerm_resource_group.aks.name
+  name                    = local.aks_name
+  location                = local.location # local.location # var.location
+  resource_group_name     = azurerm_resource_group.aks.name
   dns_prefix              = local.dns_prefix
-  kubernetes_version      = var.kubernetes_version
+  kubernetes_version      = local.kubernetes_version
   private_cluster_enabled = true
   sku_tier                = "Free" # Paid # Uptime SLA
   node_resource_group     = local.aks_nodes_rg
 
   default_node_pool {
     name                  = "system"
-    node_count            = var.default_node_count
-    vm_size               = "Standard_DS2_v2"
+    node_count            = local.aks_default_node_count
+    vm_size               = local.aks_vm_size
     type                  = "VirtualMachineScaleSets"
     availability_zones    = [1, 2, 3]
     enable_auto_scaling   = false
@@ -50,7 +50,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
     max_count             = null
     enable_node_public_ip = false
     max_pods              = 110
-    orchestrator_version  = var.kubernetes_version
+    orchestrator_version  = local.kubernetes_version
     vnet_subnet_id        = azurerm_subnet.aks.id
   }
 
@@ -111,7 +111,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "acr" {
-  name     = local.acr_rg # "${var.prefix}-acr-rg"
+  name     = local.acr_rg   # "${var.prefix}-acr-rg"
   location = local.location # local.location # var.location
 }
 
@@ -172,7 +172,7 @@ resource "azurerm_bastion_host" "bastion" {
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "vm" {
-  name     = local.vm_rg # "${var.prefix}-vm-rg"
+  name     = local.vm_rg    # "${var.prefix}-vm-rg"
   location = local.location # local.location # var.location
 }
 
@@ -199,9 +199,9 @@ resource "azurerm_windows_virtual_machine" "vm" {
   name                = "windows10-vm"
   resource_group_name = azurerm_resource_group.vm.name
   location            = azurerm_resource_group.vm.location
-  size                = "Standard_DS1_v2"
-  admin_username      = "houssem"
-  admin_password      = "@Aa123456789"
+  size                = local.vm_size
+  admin_username      = local.vm_admin_username
+  admin_password      = local.vm_admin_password
   network_interface_ids = [
     azurerm_network_interface.vm.id,
   ]
@@ -225,7 +225,7 @@ resource "azurerm_windows_virtual_machine" "vm" {
 
 resource "azurerm_resource_group" "storage" {
   name     = local.storage_rg # "${var.prefix}-storage-rg"
-  location = local.location # local.location # var.location
+  location = local.location   # local.location # var.location
 }
 
 resource "azurerm_subnet" "storage" {
@@ -242,8 +242,8 @@ resource "azurerm_storage_account" "storage" {
   name                      = local.storage_name # "${var.prefix}storage" # var.storage_name
   resource_group_name       = azurerm_resource_group.storage.name
   location                  = local.location # local.location # var.location
-  account_tier              = "Standard"  # "Premium"
-  account_kind              = "StorageV2" # "BlobStorage" "BlockBlobStorage" "FileStorage" "Storage"
+  account_tier              = "Standard"     # "Premium"
+  account_kind              = "StorageV2"    # "BlobStorage" "BlockBlobStorage" "FileStorage" "Storage"
   account_replication_type  = "LRS"
   enable_https_traffic_only = true
   access_tier               = "Hot" # "Cool"
@@ -300,7 +300,6 @@ resource "azurerm_private_endpoint" "storage" {
   location            = local.location # var.location
   resource_group_name = azurerm_resource_group.storage.name
   subnet_id           = azurerm_subnet.storage.id
-  # subnet_id           = azurerm_subnet.keyvault.id
 
   private_dns_zone_group {
     name                 = "storprdnszonegroup"
@@ -324,7 +323,7 @@ data "azurerm_client_config" "current" {
 
 resource "azurerm_resource_group" "keyvault" {
   name     = local.keyvault_rg # "${var.prefix}-keyvault-rg"
-  location = local.location # var.location
+  location = local.location    # var.location
 }
 
 resource "azurerm_subnet" "keyvault" {
@@ -339,7 +338,7 @@ resource "azurerm_subnet" "keyvault" {
 
 resource "azurerm_key_vault" "keyvault" {
   name                        = local.keyvault_name # "${var.prefix}keyvault"
-  location                    = local.location # var.location
+  location                    = local.location      # var.location
   resource_group_name         = azurerm_resource_group.keyvault.name
   enabled_for_disk_encryption = false
   tenant_id                   = data.azurerm_client_config.current.tenant_id
@@ -379,13 +378,13 @@ resource "azurerm_key_vault" "keyvault" {
 
 resource "azurerm_key_vault_secret" "secret-login" {
   name         = "DatabaseLogin"
-  value        = var.db_admin_login
+  value        = local.db_admin_login
   key_vault_id = azurerm_key_vault.keyvault.id
 }
 
 resource "azurerm_key_vault_secret" "secret-password" {
   name         = "DatabasePassword"
-  value        = var.db_admin_password
+  value        = local.db_admin_password
   key_vault_id = azurerm_key_vault.keyvault.id
 }
 
