@@ -30,11 +30,6 @@ resource "helm_release" "pod_identity_binding" {
   }
 }
 
-data "azurerm_user_assigned_identity" "identity" {
-  name                = local.identity_name
-  resource_group_name = local.aks_nodes_rg
-}
-
 # data "template_file" "yaml_template" {
 #   template = "${file("azure_identity.yaml")}"
 # }

@@ -32,6 +32,9 @@ choco install microsoft-edge -y
 # Install Git
 choco install git -y
 
+# Install curl
+choco install curl -y
+
 # Start new PS window with VS Code and Git configured
 # Restart-Service -Name "powershell.exe"
 # invoke-expression 'cmd /c start powershell -Command { 
@@ -45,5 +48,6 @@ az account set --subscription "Microsoft Azure #6"
 az aks list -o table
 az aks get-credentials --resource-group demo0051-aks-rg --name demo0051-aks
 
+cd stage3
 terraform init
 terraform plan -out tfplan
