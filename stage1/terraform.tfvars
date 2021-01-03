@@ -1,4 +1,4 @@
-prefix = "demo0052"
+prefix = "demo023"
 
 # location           = "westeurope"
 # kubernetes_version = "1.19.3"
