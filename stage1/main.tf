@@ -136,7 +136,7 @@ resource "azurerm_role_assignment" "role_acrpull" {
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "bastion" {
-  name     = bastion_rg # "${var.prefix}-bastion-rg"
+  name     = local.bastion_rg # "${var.prefix}-bastion-rg"
   location = "westeurope"
 }
 
@@ -224,7 +224,7 @@ resource "azurerm_windows_virtual_machine" "vm" {
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "storage" {
-  name     = local.storage_rg # "${var.prefix}-storage-rg"
+  name     = local.storage_rg
   location = local.location   # local.location # var.location
 }
 
@@ -239,7 +239,7 @@ resource "azurerm_subnet" "storage" {
 }
 
 resource "azurerm_storage_account" "storage" {
-  name                      = local.storage_name # "${var.prefix}storage" # var.storage_name
+  name                      = local.storage_name
   resource_group_name       = azurerm_resource_group.storage.name
   location                  = local.location # local.location # var.location
   account_tier              = "Standard"     # "Premium"
@@ -248,12 +248,10 @@ resource "azurerm_storage_account" "storage" {
   enable_https_traffic_only = true
   access_tier               = "Hot" # "Cool"
   allow_blob_public_access  = false
-  # min_tls_version           = "TLS1_2"
 
   network_rules {
     default_action = "Deny" # "Allow"
     ip_rules       = [data.http.machine_ip.body]
-    # ip_rules       = var.allowed_ips
     bypass = ["Logging", "Metrics", "AzureServices"] # None
   }
 
@@ -270,7 +268,7 @@ resource "azurerm_storage_account" "storage" {
 }
 
 resource "azurerm_storage_container" "container" {
-  name                  = local.container_name # "${var.prefix}-conatiner" # "data"
+  name                  = local.container_name
   storage_account_name  = azurerm_storage_account.storage.name
   container_access_type = "private" # "blob" "container"
 }
@@ -390,10 +388,8 @@ resource "azurerm_key_vault_secret" "secret-password" {
 
 # TODO: Craete another Identity for Key Vault
 resource "azurerm_role_assignment" "role_keyvault_reader" {
-  # name                             = "keyvaultreader"
   role_definition_name = "Reader"
   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id
-  # principal_id                     = data.azurerm_user_assigned_identity.identity.principal_id
   scope                            = azurerm_key_vault.keyvault.id
   skip_service_principal_aad_check = true
 }
@@ -401,7 +397,6 @@ resource "azurerm_role_assignment" "role_keyvault_reader" {
 resource "azurerm_role_assignment" "role_rg_operator" {
   role_definition_name = "Managed Identity Operator"
   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id
-  # principal_id                     = data.azurerm_user_assigned_identity.identity.principal_id
   scope                            = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourcegroups/${azurerm_kubernetes_cluster.aks.node_resource_group}"
   skip_service_principal_aad_check = true
 }
@@ -409,7 +404,6 @@ resource "azurerm_role_assignment" "role_rg_operator" {
 resource "azurerm_role_assignment" "role_vm_contributor" {
   role_definition_name = "Virtual Machine Contributor"
   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id
-  # principal_id                     = data.azurerm_user_assigned_identity.identity.principal_id
   scope                            = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourcegroups/${azurerm_kubernetes_cluster.aks.node_resource_group}"
   skip_service_principal_aad_check = true
 }
@@ -418,7 +412,6 @@ resource "azurerm_key_vault_access_policy" "keyvault_policy" {
   key_vault_id = azurerm_key_vault.keyvault.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id
-  # object_id = data.azurerm_user_assigned_identity.identity.principal_id
 
   secret_permissions = [
     "get",
@@ -446,7 +439,6 @@ resource "azurerm_private_endpoint" "keyvault" {
   location            = local.location # var.location
   resource_group_name = azurerm_resource_group.keyvault.name
   subnet_id           = azurerm_subnet.aks.id
-  # subnet_id           = azurerm_subnet.keyvault.id
 
   private_dns_zone_group {
     name                 = "privatednszonegroup"

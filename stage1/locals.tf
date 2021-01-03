@@ -24,7 +24,7 @@ locals {
   vm_admin_username      = "houssem"
   vm_admin_password      = "@Aa123456789"
   vm_size                = "Standard_DS2_v2"
-  aks_vm_size            = "Standard_DS1_v2"
+  aks_vm_size            = "Standard_DS2_v2"
   aks_default_node_count = 2
   kubernetes_version     = "1.19.3"
   # aks_name       = "${var.aks_name != "" ? var.aks_name : "${var.prefix}-aks"}"

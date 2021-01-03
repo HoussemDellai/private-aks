@@ -4,7 +4,7 @@
 # }
 
 data "azurerm_kubernetes_service_versions" "current" {
-  location        = "West Europe"
+  location        = "westeurope"
   include_preview = false
 }
 
