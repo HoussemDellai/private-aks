@@ -123,25 +123,23 @@ resource "azurerm_user_assigned_identity" "keyvault" {
   location            = local.location
 }
 
-# TODO: Craete another Identity for Key Vault
-resource "azurerm_role_assignment" "role_keyvault_reader" {
-  role_definition_name = "Reader"
-  principal_id         = data.azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id
-  scope                = azurerm_key_vault.keyvault.id
-
+resource "azurerm_role_assignment" "keyvault_reader" {
+  principal_id                     = azurerm_user_assigned_identity.keyvault.principal_id
+  role_definition_name             = "Reader"
+  scope                            = azurerm_key_vault.keyvault.id
   skip_service_principal_aad_check = true
 }
 
-resource "azurerm_role_assignment" "role_rg_operator" {
-  role_definition_name = "Managed Identity Operator"
-  principal_id         = data.azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id
-  scope                            = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourcegroups/${data.azurerm_kubernetes_cluster.aks.node_resource_group}"
+resource "azurerm_role_assignment" "aks_rg_operator" {
+  principal_id                     = azurerm_user_assigned_identity.keyvault.principal_id
+  role_definition_name             = "Managed Identity Operator"
+  scope                            = azurerm_user_assigned_identity.storage.id # "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourcegroups/${local.aks_nodes_rg}"
   skip_service_principal_aad_check = true
 }
 
-resource "azurerm_role_assignment" "role_vm_contributor" {
-  role_definition_name = "Virtual Machine Contributor"
-  principal_id         = data.azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id
-  scope                            = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourcegroups/${data.azurerm_kubernetes_cluster.aks.node_resource_group}"
+resource "azurerm_role_assignment" "aks_contributor" {
+  principal_id                     = azurerm_user_assigned_identity.keyvault.principal_id
+  role_definition_name             = "Virtual Machine Contributor"
+  scope                            = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourcegroups/${local.aks_nodes_rg}"
   skip_service_principal_aad_check = true
 }

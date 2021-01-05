@@ -13,8 +13,8 @@ data "azurerm_virtual_network" "vnet" {
 }
 
 data "azurerm_kubernetes_cluster" "aks" {
-  name                    = local.aks_name
-  resource_group_name     = local.aks_rg
+  name                = local.aks_name
+  resource_group_name = local.aks_rg
 }
 
 data "azurerm_kubernetes_service_versions" "current" {
