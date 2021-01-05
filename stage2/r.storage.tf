@@ -96,7 +96,7 @@ resource "azurerm_private_endpoint" "storage" {
 #----------------------------------------------------------------------------------
 
 resource "azurerm_user_assigned_identity" "storage" {
-  name                = local.identity_name
+  name                = local.storage_identity_name
   resource_group_name =  local.aks_nodes_rg # data.azurerm_kubernetes_cluster.aks.node_resource_group
   location            = local.location
 }
