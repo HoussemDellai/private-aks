@@ -1,6 +1,6 @@
 data "azurerm_kubernetes_cluster" "aks" {
   name                = local.aks_name
-  resource_group_name = local.aks_nodes_rg
+  resource_group_name = local.aks_rg
 }
 
 data "azurerm_user_assigned_identity" "storage" {
