@@ -16,7 +16,7 @@ resource "helm_release" "storage_pod_identity_binding" {
 
   set {
     name  = "podIdentitySelector"
-    value = "${local.storage_identity_name}-selector"
+    value = local.storage_identity_selector
   }
 
   set {

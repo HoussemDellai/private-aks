@@ -133,7 +133,7 @@ resource "azurerm_role_assignment" "keyvault_reader" {
 resource "azurerm_role_assignment" "aks_rg_operator" {
   principal_id                     = azurerm_user_assigned_identity.keyvault.principal_id
   role_definition_name             = "Managed Identity Operator"
-  scope                            = azurerm_user_assigned_identity.storage.id # "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourcegroups/${local.aks_nodes_rg}"
+  scope                            = azurerm_user_assigned_identity.keyvault.id # "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourcegroups/${local.aks_nodes_rg}"
   skip_service_principal_aad_check = true
 }
 

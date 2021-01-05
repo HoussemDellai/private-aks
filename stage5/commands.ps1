@@ -1,7 +1,8 @@
-$storage_account_name="demo023storage"
-$container_name="demo023-container"
-$namespace="storage"
-$pod_identity_selector="id4storage-selector"
+$prefix="demo023"
+$storage_name= "${var.prefix}storage"
+$container_name         = "${var.prefix}-container"
+$storage_namespace      = "storage"
+$storage_identity_selector = "${var.prefix}-storage-identity-selector"
 
 # testing for Storage Account
 echo "Deploying an Nginx Pod for testing..."
@@ -10,9 +11,9 @@ kind: Pod
 apiVersion: v1
 metadata:
   name: nginx
-  namespace: $($namespace)
+  namespace: $($storage_namespace)
   labels:
-    aadpodidbinding: $($pod_identity_selector)
+    aadpodidbinding: $($storage_identity_selector)
 spec:
   containers:
     - name: nginx
@@ -21,7 +22,7 @@ spec:
 "@ | kubectl apply -f -
 
 echo "Validating the pod has access to the Storage Account..."
-kubectl exec -it nginx -n $namespace -- /bin/sh 
+kubectl exec -it nginx -n $storage_namespace -- /bin/sh 
 # az login --identity
 # az storage blob list -o table -c $container_name --account-name $storage_account_name --account-key 'VxOMmo7/O7GwSNz3kAQG/lHEwxxxdn1F4PnoJa7/fVgbincAGqUWldYg0xmtUmUU0aOhmQfxhtwMxIRQEneOdA=='
 
@@ -45,11 +46,12 @@ apt-get install jq
 
 #!/bin/sh
 
-storage_account_name="demo023storage"
-container_name="demo023-container"
+prefix="demo023"
+storage_name="${prefix}storage"
+container_name="${prefix}-container"
 
-RESOURCE="https://${storage_account_name}.blob.core.windows.net"
-SERVICE_URL="https://${storage_account_name}.blob.core.windows.net/${container_name}/sample-file.sh"
+RESOURCE="https://${storage_name}.blob.core.windows.net"
+SERVICE_URL="https://${storage_name}.blob.core.windows.net/${container_name}/sample-file.sh"
 
 echo "RESOURCE: ${RESOURCE}"
 echo "SERVICE_URL: ${SERVICE_URL}"

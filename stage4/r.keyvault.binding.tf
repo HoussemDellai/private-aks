@@ -16,7 +16,7 @@ resource "helm_release" "keyvault_pod_identity_binding" {
 
   set {
     name  = "podIdentitySelector"
-    value = "${local.keyvault_identity_name}-selector"
+    value = local.keyvault_identity_selector
   }
 
   set {
