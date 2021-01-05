@@ -1,32 +1,32 @@
-resource "helm_release" "pod_identity_binding" {
-  name             = "pod-identity-binding"
+resource "helm_release" "keyvault_pod_identity_binding" {
+  name             = "keyvault-pod-identity-binding"
   chart            = "./pod_identity_chart"
-  namespace        = "storage"
+  namespace        = local.keyvault_namespace
   create_namespace = true
 
   set {
     name  = "namespace"
-    value = "storage"
+    value = local.keyvault_namespace
   }
 
   set {
     name  = "identityName"
-    value = "storage-identity"
+    value = local.keyvault_identity_name
   }
 
   set {
     name  = "podIdentitySelector"
-    value = "id4storage-selector"
+    value = "${local.keyvault_identity_name}-selector"
   }
 
   set {
     name  = "identityId"
-    value = data.azurerm_user_assigned_identity.identity.id
+    value = data.azurerm_user_assigned_identity.keyvault.id
   }
 
   set {
     name  = "identityClientId"
-    value = data.azurerm_user_assigned_identity.identity.client_id
+    value = data.azurerm_user_assigned_identity.keyvault.client_id
   }
 }
 

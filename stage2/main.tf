@@ -1,5 +1,5 @@
 #--------------------------------------------------------------------------------
-# ACR
+# ACR (public)
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "acr" {
@@ -23,7 +23,7 @@ resource "azurerm_role_assignment" "role_acrpull" {
 }
 
 #--------------------------------------------------------------------------------
-# Storage Account
+# Storage Account (Private)
 #--------------------------------------------------------------------------------
 
 resource "azurerm_resource_group" "storage" {
@@ -85,7 +85,7 @@ resource "azurerm_storage_blob" "blob" {
 }
 
 resource "azurerm_private_dns_zone" "storage" {
-  name                = "privatelink.blob.core.windows.net" # "privatelink.azurewebsites.net"
+  name                = "privatelink.blob.core.windows.net"
   resource_group_name = azurerm_resource_group.storage.name
 }
 
@@ -98,7 +98,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "storage-dns-vnet-link"
 
 resource "azurerm_private_endpoint" "storage" {
   name                = "storage-private-endpoint"
-  location            = local.location # var.location
+  location            = local.location
   resource_group_name = azurerm_resource_group.storage.name
   subnet_id           = azurerm_subnet.storage.id
 
@@ -116,7 +116,7 @@ resource "azurerm_private_endpoint" "storage" {
 }
 
 #--------------------------------------------------------------------------------
-# Key Vault
+# Key Vault (Private)
 #--------------------------------------------------------------------------------
 
 data "azurerm_client_config" "current" {
@@ -130,7 +130,7 @@ resource "azurerm_resource_group" "keyvault" {
 resource "azurerm_subnet" "keyvault" {
   name                 = "keyvault-subnet"
   virtual_network_name = data.azurerm_virtual_network.vnet.name
-  resource_group_name  = local.aks_rg # azurerm_resource_group.aks.name
+  resource_group_name  = local.aks_rg
   address_prefixes     = ["10.4.0.0/29"]
 
   enforce_private_link_endpoint_network_policies = true
@@ -257,12 +257,12 @@ resource "azurerm_private_endpoint" "keyvault" {
   }
 }
 
-#--------------------------------------------------------------------------------##
+#----------------------------------------------------------------------------------
 # Azure Identities
-#--------------------------------------------------------------------------------##
+#----------------------------------------------------------------------------------
 
 resource "azurerm_user_assigned_identity" "storage" {
-  name                = local.identity_name
+  name                = local.storage_identity_name
   resource_group_name = data.azurerm_kubernetes_cluster.aks.node_resource_group
   location            = local.location
 }
@@ -289,22 +289,22 @@ resource "azurerm_role_assignment" "storage-sbdc" {
   skip_service_principal_aad_check = true
 }
 
-#--------------------------------------------------------------------------------##
+#----------------------------------------------------------------------------------
 # Install tools in Bastion VM
-#--------------------------------------------------------------------------------##
-// resource "azurerm_virtual_machine_extension" "extension" {
-//   name                 = "k8s-tools"
-//   virtual_machine_id   = azurerm_windows_virtual_machine.vm.id
-//   publisher            = "Microsoft.Azure.Extensions"
-//   type                 = "CustomScript"
-//   type_handler_version = "2.0"
-
-//   settings = <<SETTINGS
-//     {
-//         "commandToExecute": "hostname"
-//     }
-// SETTINGS
-// }
+#----------------------------------------------------------------------------------
+# resource "azurerm_virtual_machine_extension" "extension" {
+#   name                 = "k8s-tools"
+#   virtual_machine_id   = azurerm_windows_virtual_machine.vm.id
+#   publisher            = "Microsoft.Azure.Extensions"
+#   type                 = "CustomScript"
+#   type_handler_version = "2.0"
+#
+#   settings = <<SETTINGS
+#     {
+#         "commandToExecute": "hostname"
+#     }
+# SETTINGS
+# }
 
 # # Install Azure CLI
 # Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'; rm .\AzureCLI.msi

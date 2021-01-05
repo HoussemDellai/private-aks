@@ -1,8 +1,12 @@
-# Install Azure CLI
-Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'; rm .\AzureCLI.msi
-
 # Install chocolately
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+# Install Terminal
+choco install microsoft-windows-terminal -y
+
+# Install Azure CLI
+choco install azure-cli -y
+# Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'; rm .\AzureCLI.msi
 
 # Install Kubernetes CLI
 choco install kubernetes-cli -y
@@ -16,9 +20,6 @@ choco install terraform -y
 # Install jq
 choco install jq -y
 
-# Install Terminal
-choco install microsoft-windows-terminal -y
-
 # Install VS Code
 choco install vscode -y
 # Set-ExecutionPolicy Bypass -Scope Process -Force; Install-Script Install-VSCode -Scope CurrentUser; Install-VSCode.ps1 
@@ -31,6 +32,9 @@ choco install microsoft-edge -y
 
 # Install Git
 choco install git -y
+
+# Install Azure Storage Explorer
+choco install microsoftazurestorageexplorer -y
 
 # Install curl
 choco install curl -y
@@ -48,6 +52,6 @@ az account set --subscription "Microsoft Azure #6"
 az aks list -o table
 az aks get-credentials --resource-group demo0051-aks-rg --name demo0051-aks
 
-cd stage3
+cd stage2
 terraform init
 terraform plan -out tfplan

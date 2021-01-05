@@ -57,12 +57,6 @@ spec:
 "@
 $secretProviderKV | kubectl apply -f -
 
-# echo "Installing AAD Pod Identity into AKS..."
-# helm repo add aad-pod-identity https://raw.githubusercontent.com/Azure/aad-pod-identity/master/charts
-# helm install pod-identity aad-pod-identity/aad-pod-identity
-# # kubectl apply -f https://raw.githubusercontent.com/Azure/aad-pod-identity/master/deploy/infra/deployment-rbac.yaml
-# kubectl get pods
-
 echo "Retrieving the existing Azure Identity..."
 $existingIdentity = az identity list --query "[?contains(name, '-agentpool')]" | ConvertFrom-Json
 # $existingIdentity = az resource list -g $aks.nodeResourceGroup --query "[?contains(type, 'Microsoft.ManagedIdentity/userAssignedIdentities')]"  | ConvertFrom-Json

@@ -14,6 +14,6 @@ resource "helm_release" "pod_identity_release" {
   name             = "pod-identity"
   repository       = "https://raw.githubusercontent.com/Azure/aad-pod-identity/master/charts"
   chart            = "aad-pod-identity"
-  namespace        = "default"
+  namespace        = "default" # TODO: Change namespace
   create_namespace = true
 }

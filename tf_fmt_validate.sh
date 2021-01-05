@@ -7,11 +7,11 @@ for d in "${tf_folders[@]}" ; do
     echo "terraform fmt"
     terraform fmt
     echo "terraform init"
-    terraform init
-    echo "terraform plan -out tfplan"
-    terraform plan -out tfplan
-    echo "terraform validate"
-    terraform validate
+    # terraform init
+    # echo "terraform plan -out tfplan"
+    # terraform plan -out tfplan
+    # echo "terraform validate"
+    # terraform validate
     cd ..
 done
 
