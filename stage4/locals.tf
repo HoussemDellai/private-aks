@@ -1,5 +1,6 @@
 locals {
   aks_name               = "${var.prefix}-aks"
+  aks_rg                 = "${var.prefix}-aks-rg"
   aks_nodes_rg           = "${var.prefix}-aks-nodes-rg"
   storage_identity_name  = "${var.prefix}-storage-identity"
   storage_name           = "${var.prefix}storage"
