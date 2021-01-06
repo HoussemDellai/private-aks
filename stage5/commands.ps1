@@ -1,8 +1,8 @@
 $prefix="demo023"
-$storage_name= "${var.prefix}storage"
-$container_name         = "${var.prefix}-container"
-$storage_namespace      = "storage"
-$storage_identity_selector = "${var.prefix}-storage-identity-selector"
+$storage_name="$($prefix)storage"
+$container_name="$($prefix)-container"
+$storage_namespace="storage"
+$storage_identity_selector="$($prefix)-storage-identity-selector"
 
 # testing for Storage Account
 echo "Deploying an Nginx Pod for testing..."
@@ -27,7 +27,6 @@ kubectl exec -it nginx -n $storage_namespace -- /bin/sh
 # az storage blob list -o table -c $container_name --account-name $storage_account_name --account-key 'VxOMmo7/O7GwSNz3kAQG/lHEwxxxdn1F4PnoJa7/fVgbincAGqUWldYg0xmtUmUU0aOhmQfxhtwMxIRQEneOdA=='
 
 
-curl 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fmanagement.azure.com%2F' -H Metadata:true -s
 curl 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com' -H Metadata:true -s
 
 

@@ -454,9 +454,9 @@ resource "azurerm_private_endpoint" "keyvault" {
 #--------------------------------------------------------------------------------##
 
 resource "azurerm_user_assigned_identity" "storage" {
-  name                = local.identity_name # "${var.prefix}-identity" # var.identity_name
+  name                = local.identity_name
   resource_group_name = azurerm_kubernetes_cluster.aks.node_resource_group
-  location            = local.location # var.location
+  location            = local.location
 }
 // az role assignment create \
 //     --role "Managed Identity Operator" \
@@ -475,7 +475,7 @@ resource "azurerm_role_assignment" "storage-mio" {
 // if you want the managed identity to access your entire Storage Account, 
 // you can ignore /blobServices/default/containers/$CONTAINER
 resource "azurerm_role_assignment" "storage-sbdc" {
-  scope                            = azurerm_storage_account.storage.id # azurerm_user_assigned_identity.storage.id
+  scope                            = azurerm_storage_account.storage.id
   role_definition_name             = "Storage Blob Data Contributor"
   principal_id                     = azurerm_user_assigned_identity.storage.principal_id
   skip_service_principal_aad_check = true
