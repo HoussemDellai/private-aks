@@ -26,7 +26,6 @@ resource "azurerm_key_vault" "keyvault" {
   resource_group_name         = azurerm_resource_group.keyvault.name
   enabled_for_disk_encryption = false
   tenant_id                   = data.azurerm_client_config.current.tenant_id
-  soft_delete_enabled         = true
   soft_delete_retention_days  = 7
   purge_protection_enabled    = false
   sku_name                    = "standard"
@@ -44,6 +43,7 @@ resource "azurerm_key_vault" "keyvault" {
       "get",
       "list",
       "delete",
+      "recover"
     ]
 
     storage_permissions = [
@@ -75,7 +75,7 @@ resource "azurerm_key_vault_secret" "secret-password" {
 resource "azurerm_key_vault_access_policy" "keyvault_policy" {
   key_vault_id = azurerm_key_vault.keyvault.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = data.azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id
+  object_id    = azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id # TODO: change this to KV Identity
 
   secret_permissions = [
     "get",

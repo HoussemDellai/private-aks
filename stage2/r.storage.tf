@@ -105,7 +105,7 @@ resource "azurerm_user_assigned_identity" "storage" {
 //     --assignee $CLUSTER_MSI_CLIENT_ID \
 //     --scope $IDENTITY_RESOURCE_ID
 resource "azurerm_role_assignment" "storage-mio" {
-  principal_id                     = azurerm_user_assigned_identity.storage.principal_id
+  principal_id                     = azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id # azurerm_user_assigned_identity.storage.principal_id
   role_definition_name             = "Managed Identity Operator"
   scope                            = azurerm_user_assigned_identity.storage.id
   skip_service_principal_aad_check = true

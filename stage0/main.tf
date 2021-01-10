@@ -17,3 +17,10 @@ resource "azurerm_storage_container" "container" {
   storage_account_name  = azurerm_storage_account.storage.name
   container_access_type = "container" # "blob" "private"
 }
+
+resource "azurerm_management_lock" "rg" {
+  name       = "lock-tfstate"
+  scope      = azurerm_resource_group.rg.id
+  lock_level = "CanNotDelete" # "ReadOnly"
+  notes      = "This Resource Group sould not be deleted"
+}

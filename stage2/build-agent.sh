@@ -24,9 +24,6 @@ choco install jq -y
 choco install vscode -y
 # Set-ExecutionPolicy Bypass -Scope Process -Force; Install-Script Install-VSCode -Scope CurrentUser; Install-VSCode.ps1 
 
-# Install Terraform extension in VS Code
-code --install-extension hashicorp.terraform
-
 # Install Edge
 choco install microsoft-edge -y
 
@@ -42,15 +39,18 @@ choco install curl -y
 # Start new PS window with VS Code and Git configured
 # Restart-Service -Name "powershell.exe"
 # invoke-expression 'cmd /c start powershell -Command { 
+# Install Terraform extension in VS Code
+code --install-extension hashicorp.terraform
+
 cd "C:\Users\houssem\Desktop"
 git clone https://github.com/HoussemDellai/private-aks
 cd private-aks
 Code .
 
 az login
-az account set --subscription "Microsoft Azure #6"
+az account set --subscription "Microsoft Azure #5"
 az aks list -o table
-az aks get-credentials --resource-group demo0051-aks-rg --name demo0051-aks
+az aks get-credentials -g demo0051-aks-rg -n demo0051-aks
 
 cd stage2
 terraform init

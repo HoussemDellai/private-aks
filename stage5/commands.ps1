@@ -1,4 +1,4 @@
-$prefix="demo023"
+$prefix="demo031"
 $storage_name="$($prefix)storage"
 $container_name="$($prefix)-container"
 $storage_namespace="storage"
@@ -25,7 +25,9 @@ echo "Validating the pod has access to the Storage Account..."
 kubectl exec -it nginx -n $storage_namespace -- /bin/sh 
 # az login --identity
 # az storage blob list -o table -c $container_name --account-name $storage_account_name --account-key 'VxOMmo7/O7GwSNz3kAQG/lHEwxxxdn1F4PnoJa7/fVgbincAGqUWldYg0xmtUmUU0aOhmQfxhtwMxIRQEneOdA=='
-
+kubectl run azure-cli -it --image=mcr.microsoft.com/azure-cli --labels=aadpodidbinding=$storage_identity_selector /bin/bash
+# within the azure-cli shell
+az login -i 
 
 curl 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com' -H Metadata:true -s
 
@@ -45,7 +47,7 @@ apt-get install jq
 
 #!/bin/sh
 
-prefix="demo023"
+prefix="demo031"
 storage_name="${prefix}storage"
 container_name="${prefix}-container"
 
