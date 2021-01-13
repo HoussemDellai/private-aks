@@ -4,6 +4,8 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManage
 # Install Terminal
 choco install microsoft-windows-terminal -y
 
+## Start Terminal
+
 # Install Azure CLI
 choco install azure-cli -y
 # Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'; rm .\AzureCLI.msi
@@ -36,13 +38,27 @@ choco install microsoftazurestorageexplorer -y
 # Install curl
 choco install curl -y
 
-# Start new PS window with VS Code and Git configured
-# Restart-Service -Name "powershell.exe"
-# invoke-expression 'cmd /c start powershell -Command { 
+# Configure Auto-Complete
+Set-ExecutionPolicy RemoteSigned
+# Create profile when not exist
+if (!(Test-Path -Path $PROFILE.CurrentUserAllHosts)) {
+  New-Item -ItemType File -Path $PROFILE.CurrentUserAllHosts -Force
+}
+# Open the profile with an editor (e.g. good old Notepad)
+ii $PROFILE.CurrentUserAllHosts
+# In the editor add the following lines to the profile:
+# Shows navigable menu of all options when hitting Tab
+Set-PSReadlineKeyHandler -Key Tab -Function MenuComplete
+# Autocompletion for arrow keys
+Set-PSReadlineKeyHandler -Key UpArrow -Function HistorySearchBackward
+Set-PSReadlineKeyHandler -Key DownArrow -Function HistorySearchForward
+
+## Restart Terminal
+
 # Install Terraform extension in VS Code
 code --install-extension hashicorp.terraform
 
-cd "C:\Users\houssem\Desktop"
+cd .\Desktop\
 git clone https://github.com/HoussemDellai/private-aks
 cd private-aks
 Code .
@@ -52,6 +68,6 @@ az account set --subscription "Microsoft Azure #5"
 az aks list -o table
 az aks get-credentials -g demo0051-aks-rg -n demo0051-aks
 
-cd stage2
+cd stage3
 terraform init
 terraform plan -out tfplan
