@@ -60,7 +60,7 @@ resource "azurerm_virtual_machine_extension" "install-tools" {
 
   settings             = <<SETTINGS
     {
-        "fileUris": ["https://${var.storage_name}.blob.core.windows.net/scripts/sql-install.ps1"],
-        "commandToExecute": "powershell -ExecutionPolicy Unrestricted -file sql-install.ps1"      
+        "fileUris": ["https://raw.githubusercontent.com/HoussemDellai/private-aks/main/stage1/build-agent.ps1"],
+        "commandToExecute": "powershell -ExecutionPolicy Unrestricted -file build-agent.ps1"      
     }
 }
