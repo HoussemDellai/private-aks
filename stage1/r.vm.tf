@@ -49,3 +49,18 @@ resource "azurerm_windows_virtual_machine" "vm" {
     version   = "latest"
   }
 }
+
+resource "azurerm_virtual_machine_extension" "install-tools" {
+
+  name                 = "install-tools"
+  virtual_machine_id   = azurerm_virtual_machine.vm.id
+  publisher            = "Microsoft.Compute"
+  type                 = "CustomScriptExtension"
+  type_handler_version = "1.9"
+
+  settings             = <<SETTINGS
+    {
+        "fileUris": ["https://${var.storage_name}.blob.core.windows.net/scripts/sql-install.ps1"],
+        "commandToExecute": "powershell -ExecutionPolicy Unrestricted -file sql-install.ps1"      
+    }
+}
