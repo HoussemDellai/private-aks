@@ -1,4 +1,4 @@
-$prefix="demo031"
+$prefix="demo037"
 $storage_name="$($prefix)storage"
 $container_name="$($prefix)-container"
 $storage_namespace="storage"
@@ -47,7 +47,7 @@ apt-get install jq
 
 #!/bin/sh
 
-prefix="demo031"
+prefix="demo037"
 storage_name="${prefix}storage"
 container_name="${prefix}-container"
 

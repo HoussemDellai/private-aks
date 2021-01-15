@@ -24,7 +24,6 @@ choco install jq -y
 
 # Install VS Code
 choco install vscode -y
-# Set-ExecutionPolicy Bypass -Scope Process -Force; Install-Script Install-VSCode -Scope CurrentUser; Install-VSCode.ps1 
 
 # Install Edge
 choco install microsoft-edge -y

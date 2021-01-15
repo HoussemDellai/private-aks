@@ -53,7 +53,7 @@ resource "azurerm_windows_virtual_machine" "vm" {
 resource "azurerm_virtual_machine_extension" "install-tools" {
 
   name                 = "install-tools"
-  virtual_machine_id   = azurerm_virtual_machine.vm.id
+  virtual_machine_id   = azurerm_windows_virtual_machine.vm.id
   publisher            = "Microsoft.Compute"
   type                 = "CustomScriptExtension"
   type_handler_version = "1.9"
@@ -61,6 +61,7 @@ resource "azurerm_virtual_machine_extension" "install-tools" {
   settings             = <<SETTINGS
     {
         "fileUris": ["https://raw.githubusercontent.com/HoussemDellai/private-aks/main/stage1/build-agent.ps1"],
-        "commandToExecute": "powershell -ExecutionPolicy Unrestricted -file build-agent.ps1"      
+        "commandToExecute": "powershell -ExecutionPolicy Unrestricted -file build-agent.ps1"
     }
+  SETTINGS
 }
