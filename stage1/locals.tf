@@ -15,6 +15,8 @@ locals {
   aks_rg = "${var.prefix}-aks-rg"
   # aks_nodes_rg = "${var.prefix}-aks-nodes-rg"
   // acr_rg                 = "${var.prefix}-acr-rg"
+  vm_name = "windows10-vm"
+  vm_identity_name = "vm-identity"
   bastion_rg = "${var.prefix}-bastion-rg"
   vm_rg      = "${var.prefix}-vm-rg"
   // storage_rg             = "${var.prefix}-storage-rg"

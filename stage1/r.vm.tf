@@ -17,7 +17,7 @@ resource "azurerm_subnet" "vm" {
 resource "azurerm_network_interface" "vm" {
   name                = "vm-nic"
   location            = azurerm_resource_group.vm.location
-  resource_group_name = azurerm_resource_group.vm.name
+  resource_group_name = local.vm_rg
 
   ip_configuration {
     name                          = "internal"
@@ -27,8 +27,8 @@ resource "azurerm_network_interface" "vm" {
 }
 
 resource "azurerm_windows_virtual_machine" "vm" {
-  name                = "windows10-vm"
-  resource_group_name = azurerm_resource_group.vm.name
+  name                = local.vm_name
+  resource_group_name = local.vm_rg
   location            = azurerm_resource_group.vm.location
   size                = local.vm_size
   admin_username      = local.vm_admin_username
@@ -48,6 +48,28 @@ resource "azurerm_windows_virtual_machine" "vm" {
     sku       = "20h1-pro-g2"
     version   = "latest"
   }
+
+  identity {
+    type = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.vm.id]
+  }
+}
+
+resource "azurerm_user_assigned_identity" "vm" {
+  name                = local.vm_identity_name
+  resource_group_name = local.vm_rg
+  location            = local.location
+}
+
+resource "azurerm_role_assignment" "vm-contributor" {
+  principal_id         = azurerm_user_assigned_identity.vm.principal_id
+  role_definition_name = "Contributor"
+  scope                = data.azurerm_subscription.subscription.id
+
+  skip_service_principal_aad_check = true
+}
+
+data "azurerm_subscription" "subscription" {
 }
 
 resource "azurerm_virtual_machine_extension" "install-tools" {
