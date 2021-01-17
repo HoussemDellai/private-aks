@@ -2,9 +2,6 @@
 # Key Vault (Private)
 #--------------------------------------------------------------------------------
 
-data "azurerm_client_config" "current" {
-}
-
 resource "azurerm_resource_group" "keyvault" {
   name     = local.keyvault_rg # "${var.prefix}-keyvault-rg"
   location = local.location    # var.location
@@ -121,6 +118,8 @@ resource "azurerm_user_assigned_identity" "keyvault" {
   name                = local.keyvault_identity_name
   resource_group_name = local.aks_nodes_rg # data.azurerm_kubernetes_cluster.aks.node_resource_group
   location            = local.location
+
+  depends_on = [azurerm_kubernetes_cluster.aks]
 }
 
 resource "azurerm_role_assignment" "keyvault_reader" {

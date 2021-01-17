@@ -100,25 +100,41 @@ resource "azurerm_user_assigned_identity" "storage" {
   resource_group_name = local.aks_nodes_rg
   location            = local.location
 }
-// az role assignment create \
-//     --role "Managed Identity Operator" \
-//     --assignee $CLUSTER_MSI_CLIENT_ID \
-//     --scope $IDENTITY_RESOURCE_ID
+# az role assignment create \
+#     --role "Managed Identity Operator" \
+#     --assignee $CLUSTER_MSI_CLIENT_ID \
+#     --scope $IDENTITY_RESOURCE_ID
 resource "azurerm_role_assignment" "storage-mio" {
-  principal_id                     = azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id # azurerm_user_assigned_identity.storage.principal_id
-  role_definition_name             = "Managed Identity Operator"
-  scope                            = azurerm_user_assigned_identity.storage.id
+  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity.0.object_id # azurerm_user_assigned_identity.storage.principal_id
+  role_definition_name = "Managed Identity Operator"
+  scope                = azurerm_user_assigned_identity.storage.id
+
+  skip_service_principal_aad_check = true
+
+  depends_on = [azurerm_kubernetes_cluster.aks]
+}
+# az role assignment create \
+#     --role "Storage Blob Data Contributor" \
+#     --assignee $IDENTITY_CLIENT_ID \
+#     --scope "$STORAGE_ACCOUNT_RESOURCE_ID/blobServices/default/containers/$CONTAINER"
+# if you want the managed identity to access your entire Storage Account, 
+# you can ignore /blobServices/default/containers/$CONTAINER
+resource "azurerm_role_assignment" "storage-sbdc" {
+  principal_id         = azurerm_user_assigned_identity.storage.principal_id
+  role_definition_name = "Storage Blob Data Contributor"
+  scope                = azurerm_storage_account.storage.id
+
   skip_service_principal_aad_check = true
 }
-// az role assignment create \
-//     --role "Storage Blob Data Contributor" \
-//     --assignee $IDENTITY_CLIENT_ID \
-//     --scope "$STORAGE_ACCOUNT_RESOURCE_ID/blobServices/default/containers/$CONTAINER"
-// if you want the managed identity to access your entire Storage Account, 
-// you can ignore /blobServices/default/containers/$CONTAINER
-resource "azurerm_role_assignment" "storage-sbdc" {
-  principal_id                     = azurerm_user_assigned_identity.storage.principal_id
-  role_definition_name             = "Storage Blob Data Contributor"
-  scope                            = azurerm_storage_account.storage.id
+
+# az role assignment create 
+#    --role Reader 
+#    --assignee ${IDENTITY_CLIENT_ID} 
+#    --scope /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${IDENTITY_RESOURCE_GROUP}
+resource "azurerm_role_assignment" "storage-reader" {
+  principal_id         = azurerm_user_assigned_identity.storage.principal_id
+  role_definition_name = "Reader"
+  scope                = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourcegroups/${azurerm_kubernetes_cluster.aks.node_resource_group}"
+
   skip_service_principal_aad_check = true
 }

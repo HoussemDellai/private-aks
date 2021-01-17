@@ -27,6 +27,6 @@ locals {
   vm_size                = "Standard_DS2_v2"
   aks_vm_size            = "Standard_DS2_v2"
   aks_default_node_count = 2
-  kubernetes_version     = "1.19.3"
+  kubernetes_version     = "1.19.6"
   # aks_name       = "${var.aks_name != "" ? var.aks_name : "${var.prefix}-aks"}"
 }

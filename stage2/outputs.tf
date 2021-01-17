@@ -1,9 +1,9 @@
 output "keyvault_id" {
-  value       = azurerm_key_vault.keyvault.id
+  value = azurerm_key_vault.keyvault.id
 }
 
 output "keyvault_url" {
-  value       = azurerm_key_vault.keyvault.vault_uri
+  value = azurerm_key_vault.keyvault.vault_uri
 }
 
 output "storage_account_id" {

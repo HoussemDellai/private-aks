@@ -6,7 +6,7 @@
 resource "azurerm_subnet" "aks" {
   name                 = "aks-subnet"
   virtual_network_name = local.vnet_name # azurerm_virtual_network.vnet.name
-  resource_group_name  = local.aks_rg # azurerm_resource_group.aks.name
+  resource_group_name  = local.aks_rg    # azurerm_resource_group.aks.name
   address_prefixes     = ["10.1.0.0/16"]
 
   enforce_private_link_endpoint_network_policies = true

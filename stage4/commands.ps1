@@ -88,7 +88,7 @@ $nginxPod = @"
 kind: Pod
 apiVersion: v1
 metadata:
-  name: nginx-secrets-store
+  name: secrets-pod
   labels:
     aadpodidbinding: $($identitySelector)
 spec:
@@ -113,11 +113,11 @@ sleep 20
 kubectl get pods
 
 echo "Validating the pod has access to the secrets from Key Vault..."
-kubectl exec -it nginx-secrets-store -- ls /mnt/secrets-store/
-kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/DATABASE_LOGIN
-kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/$secret1Alias
-kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/DATABASE_PASSWORD
-kubectl exec -it nginx-secrets-store -- cat /mnt/secrets-store/$secret2Alias
+kubectl exec -it secrets-pod -- ls /mnt/secrets-store/
+kubectl exec -it secrets-pod -- cat /mnt/secrets-store/DATABASE_LOGIN
+kubectl exec -it secrets-pod -- cat /mnt/secrets-store/$secret1Alias
+kubectl exec -it secrets-pod -- cat /mnt/secrets-store/DATABASE_PASSWORD
+kubectl exec -it secrets-pod -- cat /mnt/secrets-store/$secret2Alias
 
 # testing for Key Vault with Pod Identity, without CSI Driver
 # yet another option

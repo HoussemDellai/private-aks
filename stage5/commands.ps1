@@ -1,4 +1,4 @@
-$prefix="demo037"
+$prefix="demo041"
 $storage_name="$($prefix)storage"
 $container_name="$($prefix)-container"
 $storage_namespace="storage"
@@ -45,9 +45,14 @@ apk add --update jq
 apt-get update
 apt-get install jq
 
+
+curl -H Metadata:true --noproxy "*" "http://169.254.169.254/metadata/instance?api-version=2020-09-01" | jq
+# for Powershell
+Invoke-RestMethod -Headers @{"Metadata"="true"} -Method GET -NoProxy -Uri "http://169.254.169.254/metadata/instance?api-version=2020-09-01" | ConvertTo-Json
+
 #!/bin/sh
 
-prefix="demo037"
+prefix="demo041"
 storage_name="${prefix}storage"
 container_name="${prefix}-container"
 
@@ -58,7 +63,20 @@ echo "RESOURCE: ${RESOURCE}"
 echo "SERVICE_URL: ${SERVICE_URL}"
 
 jwt=$(curl -sS http://169.254.169.254/metadata/identity/oauth2/token/?resource=$RESOURCE)
-echo "Full token:  $jwt"
+echo $jwt | jq
 token=$(echo $jwt | jq -r '.access_token')
 echo "Access token:  $token"
 curl -v -H 'x-ms-version: 2020-04-08' -H 'Accept: application/json' -H "Authorization: Bearer ${token}" $SERVICE_URL
+
+
+
+
+#####
+az role assignment delete --id ${IDENTITY_ASSIGNMENT_ID}
+
+
+az storage blob list \
+    --account-name $storage_name \
+    --container-name $container_name \
+    --output table \
+    --auth-mode login
