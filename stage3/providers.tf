@@ -9,6 +9,10 @@ provider "helm" {
 
 provider "azurerm" {
   features {}
+
+  # use_msi              = true
+  # subscription_id      = "7b1f7584-000000000000000000000000000"
+  # tenant_id            = "558506eb-000000000000000000000000000"
 }
 
 terraform {
