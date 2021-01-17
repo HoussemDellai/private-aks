@@ -11,3 +11,6 @@
 data "http" "machine_ip" {
   url = "http://ifconfig.me"
 }
+
+data "azurerm_subscription" "subscription" {
+}

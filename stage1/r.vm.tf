@@ -27,15 +27,13 @@ resource "azurerm_network_interface" "vm" {
 }
 
 resource "azurerm_windows_virtual_machine" "vm" {
-  name                = local.vm_name
-  resource_group_name = local.vm_rg
-  location            = azurerm_resource_group.vm.location
-  size                = local.vm_size
-  admin_username      = local.vm_admin_username
-  admin_password      = local.vm_admin_password
-  network_interface_ids = [
-    azurerm_network_interface.vm.id,
-  ]
+  name                  = local.vm_name
+  resource_group_name   = local.vm_rg
+  location              = azurerm_resource_group.vm.location
+  size                  = local.vm_size
+  admin_username        = local.vm_admin_username
+  admin_password        = local.vm_admin_password
+  network_interface_ids = [azurerm_network_interface.vm.id]
 
   os_disk {
     caching              = "ReadWrite"
@@ -50,26 +48,16 @@ resource "azurerm_windows_virtual_machine" "vm" {
   }
 
   identity {
-    type = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.vm.id]
+    type = "SystemAssigned"
   }
 }
 
-resource "azurerm_user_assigned_identity" "vm" {
-  name                = local.vm_identity_name
-  resource_group_name = local.vm_rg
-  location            = local.location
-}
-
 resource "azurerm_role_assignment" "vm-contributor" {
-  principal_id         = azurerm_user_assigned_identity.vm.principal_id
+  principal_id         = azurerm_windows_virtual_machine.vm.identity.0.principal_id
   role_definition_name = "Contributor"
   scope                = data.azurerm_subscription.subscription.id
 
   skip_service_principal_aad_check = true
-}
-
-data "azurerm_subscription" "subscription" {
 }
 
 resource "azurerm_virtual_machine_extension" "install-tools" {
@@ -80,7 +68,7 @@ resource "azurerm_virtual_machine_extension" "install-tools" {
   type                 = "CustomScriptExtension"
   type_handler_version = "1.9"
 
-  settings             = <<SETTINGS
+  settings = <<SETTINGS
     {
         "fileUris": ["https://raw.githubusercontent.com/HoussemDellai/private-aks/main/stage1/build-agent.ps1"],
         "commandToExecute": "powershell -ExecutionPolicy Unrestricted -file build-agent.ps1"
