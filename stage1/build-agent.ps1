@@ -37,6 +37,10 @@ choco install microsoftazurestorageexplorer -y
 # Install curl
 choco install curl -y
 
+# (Optional) Install Docker for Desktop
+# choco install docker-desktop -y
+# choco install docker-cli -y
+
 # Configure Auto-Complete
 Set-ExecutionPolicy RemoteSigned
 # Create profile when not exist
