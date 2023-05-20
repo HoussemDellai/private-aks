@@ -37,6 +37,11 @@ choco install microsoftazurestorageexplorer -y
 # Install curl
 choco install curl -y
 
+# Install python
+choco install python -y
+
+Set-Alias -Name k -Value kubectl
+
 # (Optional) Install Docker for Desktop
 # choco install docker-desktop -y
 # choco install docker-cli -y
@@ -65,7 +70,11 @@ Set-PSReadLineOption -colors @{ Default = "Green"}
 Set-PSReadLineOption -colors @{ Parameter = "Blue"}
 Set-PSReadLineOption -colors @{ Command = "Magenta"}
 
-Set-Alias -Name k -Value kubectl
+function prompt {
+" $ "
+}
+
+Import-Module Terminal-Icons
 
 Clear
 
