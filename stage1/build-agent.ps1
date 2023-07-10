@@ -84,6 +84,11 @@ pwd
 
 $powershellProfile > $PROFILE.CurrentUserAllHosts
 
+# Set up language preference
+$LanguageList = Get-WinUserLanguageList
+$LanguageList.Add("fr-FR")
+Set-WinUserLanguageList $LanguageList
+
 ## Restart Terminal
 
 # Install Terraform extension in VS Code
